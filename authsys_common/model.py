@@ -3,14 +3,9 @@ from sqlalchemy import (Table, Column, Integer, Boolean,
     String, MetaData, ForeignKey)
 
 meta = MetaData()
-members = Table('members', meta,
-        Column('id', Integer, primary_key=True),
-        Column('name', String),
-        Column('indemnity_form', String, ForeignKey('indemnity_forms.id')),
-    )
 
 tokens = Table('tokens', meta,
-    Column('id', Integer, primary_key=True),
+    Column('id', String, primary_key=True),
     Column('member_id', Integer, ForeignKey('members.id')),
     Column('timestamp', Integer),
     Column('valid', Boolean),
@@ -27,10 +22,10 @@ subscriptions = Table('subscriptions', meta,
 entries = Table('entries', meta,
     Column('id', Integer, primary_key=True),
     Column('timestamp', Integer),
-    Column('token_id', String), # might have a field in members
+    Column('token_id', String, ForeignKey("tokens.id")),
 )
 
-indemnity_forms = Table('indemnity_forms', meta,
+members = Table('members', meta,
     Column('id', Integer, primary_key=True),
     Column('name', String),
     Column('id_number', String),
@@ -38,4 +33,5 @@ indemnity_forms = Table('indemnity_forms', meta,
     Column('spam_consent', Boolean),
 #    Column(), XXX find out what we want here
     Column('signature_filename', String),
+    Column('timestamp', Integer),
 )
