@@ -4,15 +4,24 @@ from ConfigParser import ConfigParser
 
 from sqlalchemy import create_engine
 
-from .model import meta, members
+from .model import meta, members, entries, tokens
+
+config = None
+
+def get_config():
+    global config
+
+    if config is None:
+        if os.getenv('AUTHSYS_INI') is None:
+            print "Error, set AUTHSYS_INI env variable to your config"
+            sys.exit(2) # maaaybe raise an exception instead
+
+        config = ConfigParser()
+        config.read(os.getenv('AUTHSYS_INI'))
+    return config
 
 def get_db_url():
-    if os.getenv('AUTHSYS_INI') is None:
-        print "Error, set AUTHSYS_INI env variable to your config"
-        sys.exit(2) # maaaybe raise an exception instead
-
-    cp = ConfigParser()
-    cp.read(os.getenv('AUTHSYS_INI'))
+    cp = get_config()
     return cp.get('db', 'url')
 
 def create_db(url):
@@ -25,6 +34,22 @@ def create_db(url):
 def populate_with_test_data(con):
     ins = members.insert()
     con.execute(ins.values([
-        {'name': "John One"},
-        {'name': "Brad Two"},
-        {'name': "Jim Three"}]))
+        [1, "One Two", "1234", "a@b.com", False, "filename", 1234],
+        [2, "John One", "12345", "b@com", True, "file2", 1235],
+        [3, "Brad Two", "11111", "x@com", True, "filex", 1236],
+        [4, "Jim Three", "xyz", "aaa@gmail.com", False, "file8", 1237],
+    ]))
+    ins = entries.insert()
+    t0 = 10000
+    con.execute(ins.values([
+        [1, t0, "AAAAAA08"],
+        [2, t0 + 5, "AAAAAA08"],
+        [3, t0 + 10, "BBBBBB08"],
+        [4, t0 + 20, "CCCCCC08"],
+        [5, t0 + 30, "DDDDDD08"],
+        [6, t0 + 40, "BBBBBB08"],
+        ]))
+    ins = tokens.insert()
+    con.execute(ins.values([
+        ["BBBBBB08", 2, 0, True],
+        ]))
