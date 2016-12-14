@@ -4,7 +4,7 @@ from ConfigParser import ConfigParser
 
 from sqlalchemy import create_engine
 
-from .model import meta, members, entries, tokens
+from .model import meta, members, entries, tokens, subscriptions
 
 config = None
 
@@ -52,4 +52,10 @@ def populate_with_test_data(con):
     ins = tokens.insert()
     con.execute(ins.values([
         ["BBBBBB08", 2, 0, True],
+        ["CCCCCC08", 2, 0, False],
+        ]))
+    ins = subscriptions.insert()
+    con.execute(ins.values([
+        [0, 2, "regular", t0, t0 + 20],
+        [1, 2, "regular", 0, 2000],
         ]))

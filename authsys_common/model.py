@@ -14,7 +14,7 @@ tokens = Table('tokens', meta,
 subscriptions = Table('subscriptions', meta,
     Column('id', Integer, primary_key=True),
     Column('member_id', Integer, ForeignKey('members.id')),
-    Column('type', String), # either 'before4' or 'normal'
+    Column('type', String), # either 'before4' or 'regular'
     Column('start_timestamp', Integer),
     Column('end_timestamp', Integer),
 )
