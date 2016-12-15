@@ -24,6 +24,10 @@ def get_db_url():
     cp = get_config()
     return cp.get('db', 'url')
 
+def get_email_conf():
+    cp = get_config()
+    return cp.get('email', 'username'), cp.get('email', 'password')
+
 def create_db(url):
     eng = create_engine(url)
 
