@@ -97,9 +97,17 @@ def entries_after(con, timestamp):
         entries.c.token_id == tokens.c.id, tokens.c.valid)),
         members, members.c.id == tokens.c.member_id),
         subscriptions, and_(subscriptions.c.member_id == members.c.id,
-            and_(subscriptions.c.end_timestamp >= entries.c.timestamp,
-                subscriptions.c.start_timestamp <= entries.c.timestamp)))
+            subscriptions.c.end_timestamp >= entries.c.timestamp))
     return [(a, b, c, d, e) for a, b, c, d, e in
         con.execute(select([entries.c.token_id, members.c.name,
         entries.c.timestamp, subscriptions.c.end_timestamp, subscriptions.c.type]).select_from(oj).where(
         entries.c.timestamp >= timestamp).order_by(desc(entries.c.timestamp)))]
+
+def is_valid_token(con, token_id, t):
+    r = [(a, b, c, d) for a, b, c, d in
+    list(con.execute(select([members.c.name, tokens.c.id, subscriptions.c.start_timestamp,
+        subscriptions.c.end_timestamp]).where(and_(tokens.c.id == token_id,
+        members.c.id == tokens.c.member_id, tokens.c.valid,
+        subscriptions.c.member_id == members.c.id, subscriptions.c.end_timestamp > t,
+        subscriptions.c.start_timestamp - 3600 * 24 < t))))]
+    return len(r) == 1
