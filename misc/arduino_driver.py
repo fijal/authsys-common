@@ -8,6 +8,11 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.protocols.basic import LineReceiver
 
+def reconnect_to_brain():
+    print "RECONNECTING"
+    d = runner.run(TokenComponent, start_reactor=False)
+    d.addErrback(lambda *args: reactor.callLater(1.0, reconnect))
+
 class TokenComponent(ApplicationSession):
     def onJoin(self, details):
         print "CONNECTED"
@@ -15,12 +20,7 @@ class TokenComponent(ApplicationSession):
 
     def onDisconnect(self):
         print "DISCONNECTED"
-        reactor.callLater(1.0, self.reconnect)
-
-    def reconnect(self):
-        print "RECONNECTING"
-        d = runner.run(TokenComponent, start_reactor=False)
-        d.addErrback(lambda *args: reactor.callLater(1.0, self.reconnect))
+        reactor.callLater(1.0, reconnect_to_brain)
 
     def auth_token(self, data):
         return self.call('com.members.register_token', data)
@@ -87,4 +87,5 @@ if __name__ == '__main__':
         environ.get("AUTOBAHN_DEMO_ROUTER", u"ws://127.0.0.1:8080/ws"),
         u"authsys",
     )
-    runner.run(TokenComponent)
+    reconnect_to_brain()
+    reactor.run()
