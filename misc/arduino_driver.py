@@ -11,7 +11,7 @@ from twisted.protocols.basic import LineReceiver
 def reconnect_to_brain():
     print "RECONNECTING"
     d = runner.run(TokenComponent, start_reactor=False)
-    d.addErrback(lambda *args: reactor.callLater(1.0, reconnect))
+    d.addErrback(lambda *args: reactor.callLater(1.0, reconnect_to_brain))
 
 class TokenComponent(ApplicationSession):
     def onJoin(self, details):
