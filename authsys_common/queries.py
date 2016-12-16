@@ -47,7 +47,7 @@ def list_indemnity_forms(con):
     return [(a, b, c, d) for a, b, c, d in con.execute(select(
         [members.c.id, members.c.name, members.c.id_number,
         members.c.timestamp]).select_from(oj).where(
-        tokens.c.id == None).order_by(entries.c.timestamp))]
+        tokens.c.id == None).order_by(members.c.timestamp))]
 
 def get_form(con, no):
     """ Get indemnity form for a member 'no'
