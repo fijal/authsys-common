@@ -71,7 +71,7 @@ def reconnect():
     if line_protocol.connected:
         return
     try:
-        SerialPort(line_protocol, '/dev/tty.usbmodem1411', reactor, 9600)
+        SerialPort(line_protocol, '/dev/ttyACM0', reactor, 9600)
     except:
         reactor.callLater(1.0, reconnect) # in case that one fails
         raise
