@@ -61,5 +61,6 @@ def populate_with_test_data(con):
     ins = subscriptions.insert()
     con.execute(ins.values([
         [0, 2, "regular", t0, t0 + 20],
+        [2, 2, "before4", t0 - 20, t0 + 20],
         [1, 2, "regular", 0, 2000],
         ]))

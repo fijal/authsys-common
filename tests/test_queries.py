@@ -16,10 +16,10 @@ class TestQueries(object):
         assert q.get_member_list(self.c) == [(2, "John One",)]
 
     def test_list_forms(self):
-        assert q.list_indemnity_forms(self.c) == [
-            (1, u'One Two', '1234', 1234),
-            (3, u'Brad Two', u'11111', 1236),
-            (4, u'Jim Three', u'xyz', 1237)]
+        r = [(4, u'Jim Three', u'xyz', 1237), (3, u'Brad Two', u'11111', 1236),
+             (2, u'John One', u'12345', 1235), (2, u'John One', u'12345', 1235),
+             (1, u'One Two', u'1234', 1234)]
+        assert q.list_indemnity_forms(self.c) == r
 
     def test_unrecognized_entries_after(self):
         t0 = 10000

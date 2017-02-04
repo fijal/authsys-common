@@ -46,8 +46,7 @@ def list_indemnity_forms(con):
     oj = outerjoin(members, tokens, members.c.id == tokens.c.member_id)
     return [(a, b, c, d) for a, b, c, d in con.execute(select(
         [members.c.id, members.c.name, members.c.id_number,
-        members.c.timestamp]).select_from(oj).where(
-        tokens.c.id == None).order_by(members.c.timestamp))]
+        members.c.timestamp]).select_from(oj).order_by(desc(members.c.timestamp)))]
 
 def get_form(con, no):
     """ Get indemnity form for a member 'no'
@@ -98,10 +97,17 @@ def entries_after(con, timestamp):
         members, members.c.id == tokens.c.member_id),
         subscriptions, and_(subscriptions.c.member_id == members.c.id,
             subscriptions.c.end_timestamp >= entries.c.timestamp))
-    return [(a, b, c, d, e) for a, b, c, d, e in
-        con.execute(select([entries.c.token_id, members.c.name,
+    r = con.execute(select([entries.c.token_id, members.c.name,
         entries.c.timestamp, subscriptions.c.end_timestamp, subscriptions.c.type]).select_from(oj).where(
-        entries.c.timestamp >= timestamp).order_by(desc(entries.c.timestamp)))]
+        entries.c.timestamp >= timestamp).order_by(desc(entries.c.timestamp)))
+    l = []
+    last_token_id = None
+    for (token_id, b, c, d, tp) in r:
+        if tp == 'regular' and token_id == last_token_id:
+            l.pop()
+        last_token_id = token_id
+        l.append((token_id, b, c, d, tp))
+    return l
 
 def is_valid_token(con, token_id, t):
     r = [(a, b, c, d) for a, b, c, d in
