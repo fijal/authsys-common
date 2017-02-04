@@ -35,3 +35,16 @@ members = Table('members', meta,
     Column('signature_filename', String),
     Column('timestamp', Integer),
 )
+
+daily_passes = Table('daily_passes', meta,
+    Column('id', Integer, primary_key=True),
+    Column('member_id', Integer, ForeignKey('members.id')),
+    Column('timestamp', Integer))
+
+tables = {
+    'tokens': tokens,
+    'subscriptions': subscriptions,
+    'entries': entries,
+    'members': members,
+    'daily_passes': daily_passes
+    }
