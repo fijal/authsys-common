@@ -88,6 +88,13 @@ def remove_subscription(con, no):
         subscriptions.c.end_timestamp == t0)))[0][0]
     con.execute(delete(subscriptions, subscriptions.c.id == id))
 
+def change_date(con, no, year, month, day):
+    tstamp = time.mktime(datetime.datetime(int(year), int(month), int(day), 23, 00).timetuple())
+    lst = list(con.execute(select([subscriptions.c.id]).where(and_(subscriptions.c.end_timestamp > time.time(),
+        subscriptions.c.member_id == no)).order_by(desc(subscriptions.c.end_timestamp))))
+    id = lst[0][0]
+    con.execute(subscriptions.update().where(subscriptions.c.id==id).values(end_timestamp=tstamp))
+
 def entries_after(con, timestamp):
     """ List all the entries after 'timestamp' with extra information
     about the subscription and validity
