@@ -17,6 +17,7 @@ subscriptions = Table('subscriptions', meta,
     Column('type', String), # either 'before4' or 'regular'
     Column('start_timestamp', Integer),
     Column('end_timestamp', Integer),
+    Column('renewal_id', Integer),
 )
 
 entries = Table('entries', meta,
@@ -34,6 +35,20 @@ members = Table('members', meta,
 #    Column(), XXX find out what we want here
     Column('signature_filename', String),
     Column('timestamp', Integer),
+    Column('member_type', String), # can be 'ondemand', 'recurring', null or 'perpetual'
+    Column('credit_card_id', Integer),
+)
+
+payment_history = Table('payment_history', meta,
+    Column('id', Integer, primary_key=True),
+    Column('member_id', Integer, ForeignKey('members.id')),
+    Column('timestamp', Integer),
+    Column('type', String),
+    Column('out_code', String),
+    Column('out_description', String),
+    Column('price', Integer),
+    Column('membership_type', String),
+    Column('token_id', Integer),
 )
 
 daily_passes = Table('daily_passes', meta,
@@ -46,5 +61,6 @@ tables = {
     'subscriptions': subscriptions,
     'entries': entries,
     'members': members,
-    'daily_passes': daily_passes
+    'daily_passes': daily_passes,
+    'payment_history': payment_history,
     }
