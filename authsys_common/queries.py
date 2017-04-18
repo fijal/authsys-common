@@ -7,7 +7,8 @@ import calendar
 
 from sqlalchemy import select, desc, outerjoin, and_, func, delete, or_
 
-from .model import members, entries, tokens, subscriptions, daily_passes, payment_history
+from .model import members, entries, tokens, subscriptions, daily_passes, payment_history,\
+    free_passes
 
 def add_months(sourcedate, months):
     month = sourcedate.month - 1 + months
@@ -54,13 +55,15 @@ def list_indemnity_forms(con):
     """ List all the indemnity forms that have no assigned tokens
     """
     day_start, day_end = day_start_end()
-    oj = outerjoin(
+    oj = outerjoin(outerjoin(
         outerjoin(members, tokens, members.c.id == tokens.c.member_id), daily_passes,
         and_(members.c.id == daily_passes.c.member_id,
-            and_(daily_passes.c.timestamp > day_start, daily_passes.c.timestamp < day_end)))
-    return [(a, b, c, d, e) for a, b, c, d, e in con.execute(select(
+            and_(daily_passes.c.timestamp > day_start, daily_passes.c.timestamp < day_end))),
+        free_passes, members.c.id == free_passes.c.member_id)
+    return [(a, b, c, d, e, f) for a, b, c, d, e, f in con.execute(select(
         [members.c.id, members.c.name, members.c.id_number,
-        members.c.timestamp, daily_passes.c.timestamp]).select_from(oj).order_by(desc(members.c.timestamp)))]
+        members.c.timestamp, daily_passes.c.timestamp,
+        free_passes.c.timestamp]).select_from(oj).order_by(desc(members.c.timestamp)))]
 
 def daypass_change(con, no):
     day_start, day_end = day_start_end()
@@ -70,6 +73,13 @@ def daypass_change(con, no):
         con.execute(daily_passes.insert().values(timestamp = int(time.time()), member_id=no))
     else:
         con.execute(daily_passes.delete().where(daily_passes.c.id == lst[0][0]))
+
+def freepass_change(con, no):
+    lst = list(con.execute(select([free_passes]).where(free_passes.c.member_id == no)))
+    if len(lst) == 0:
+        con.execute(free_passes.insert().values(timestamp = int(time.time()), member_id=no))
+    else:
+        con.execute(free_passes.delete().where(free_passes.c.id == lst[0][0]))
 
 def get_form(con, no):
     """ Get indemnity form for a member 'no'
