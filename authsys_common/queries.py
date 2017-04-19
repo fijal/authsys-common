@@ -31,10 +31,12 @@ def get_member_data(con, no):
         select([func.max(subscriptions.c.end_timestamp)]).where(
         subscriptions.c.member_id == no)))[0][0]
     if max_timestamp is None:
-        m_id, name, tstamp = list(con.execute(select(
-            [members.c.id, members.c.name, members.c.timestamp]).where(
+        m_id, name, tstamp, memb_type = list(con.execute(select(
+            [members.c.id, members.c.name, members.c.timestamp, members.c.member_type]).where(
             members.c.id == no)))[0]
-        return (m_id, name, tstamp, None, None)
+        return {'member_id': m_id, 'name': name, 'subscription_type': None,
+                'start_timestamp': tstamp, 'credit_card_token': None, 'member_type': memb_type,
+                'subscription_ends': None}
     return [{'member_id' : x[0], 'name': x[1], 'subscription_type': x[3],
         'start_timestamp': x[2], 'subscription_starts': x[4],
         'subscription_ends' : x[5], 'member_type': x[6],
@@ -150,7 +152,8 @@ def entries_after(con, timestamp):
         entries.c.token_id == tokens.c.id, tokens.c.valid)),
         members, members.c.id == tokens.c.member_id),
         subscriptions, or_(and_(subscriptions.c.member_id == members.c.id,
-            subscriptions.c.end_timestamp >= entries.c.timestamp), members.c.member_type == 'perpetual'))
+            subscriptions.c.end_timestamp >= entries.c.timestamp),
+                           and_(members.c.member_type == 'perpetual', members.c.id == subscriptions.c.member_id)))
     r = con.execute(select([entries.c.token_id, members.c.name,
         entries.c.timestamp, subscriptions.c.end_timestamp, subscriptions.c.type]).select_from(oj).where(
         entries.c.timestamp >= timestamp).order_by(desc(entries.c.timestamp)))
