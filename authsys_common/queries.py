@@ -250,3 +250,6 @@ def members_to_update(con):
             continue
         newsubs[k] = v[-1]
     return newsubs
+
+def remove_credit_card_token(con, member_id):
+    con.execute(members.update().where(members.c.id == member_id).values(credit_card_id=None))
