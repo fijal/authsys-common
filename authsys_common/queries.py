@@ -230,3 +230,23 @@ def get_stats(con):
         'total_perpetual': total_perpetual,
         'total_visitors': total_visitors,
     }
+
+def members_to_update(con):
+    lst = list(con.execute(select([members.c.id, members.c.name, members.c.credit_card_id,
+        subscriptions.c.type, subscriptions.c.start_timestamp,
+        subscriptions.c.end_timestamp]).where(and_(
+        and_(members.c.member_type == 'recurring',
+        members.c.credit_card_id != None), members.c.id == subscriptions.c.member_id))))
+    subs = {}
+    for item in lst:
+        subs[item[0]] = subs.get(item[0], [])
+        subs[item[0]].append(item[1:])
+    for k, v in subs.items():
+        v.sort()
+    d = datetime.datetime.fromtimestamp(time.time()).replace(hour=22, minute=0)
+    newsubs = {}
+    for k, v in subs.items():
+        if v[-1][-1] > time.mktime(d.timetuple()):
+            continue
+        newsubs[k] = v[-1]
+    return newsubs
