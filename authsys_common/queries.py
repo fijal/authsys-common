@@ -243,7 +243,7 @@ def members_to_update(con):
         subs[item[0]].append(item[1:])
     for k, v in subs.items():
         v.sort()
-    d = datetime.datetime.fromtimestamp(time.time()).replace(hour=22, minute=0)
+    d = datetime.datetime.fromtimestamp(time.time()).replace(hour=23, minute=30)
     newsubs = {}
     for k, v in subs.items():
         if v[-1][-1] > time.mktime(d.timetuple()):
