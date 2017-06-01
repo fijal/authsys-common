@@ -8,7 +8,7 @@ import calendar
 from sqlalchemy import select, desc, outerjoin, and_, func, delete, or_
 
 from .model import members, entries, tokens, subscriptions, daily_passes, payment_history,\
-    free_passes
+    free_passes, league
 
 def add_months(sourcedate, months):
     month = sourcedate.month - 1 + months
@@ -57,15 +57,15 @@ def list_indemnity_forms(con):
     """ List all the indemnity forms that have no assigned tokens
     """
     day_start, day_end = day_start_end()
-    oj = outerjoin(outerjoin(
+    oj = outerjoin(outerjoin(outerjoin(
         outerjoin(members, tokens, members.c.id == tokens.c.member_id), daily_passes,
         and_(members.c.id == daily_passes.c.member_id,
             and_(daily_passes.c.timestamp > day_start, daily_passes.c.timestamp < day_end))),
-        free_passes, members.c.id == free_passes.c.member_id)
-    return [(a, b, c, d, e, f) for a, b, c, d, e, f in con.execute(select(
+        free_passes, members.c.id == free_passes.c.member_id), league, league.c.member_id == members.c.id)
+    return [(a, b, c, d, e, f, g) for a, b, c, d, e, f, g in con.execute(select(
         [members.c.id, members.c.name, members.c.id_number,
         members.c.timestamp, daily_passes.c.timestamp,
-        free_passes.c.timestamp]).select_from(oj).order_by(desc(members.c.timestamp)))]
+        free_passes.c.timestamp, league.c.timestamp]).select_from(oj).order_by(desc(members.c.timestamp)))]
 
 def daypass_change(con, no):
     day_start, day_end = day_start_end()
@@ -82,6 +82,13 @@ def freepass_change(con, no):
         con.execute(free_passes.insert().values(timestamp = int(time.time()), member_id=no))
     else:
         con.execute(free_passes.delete().where(free_passes.c.id == lst[0][0]))
+
+def league_register(con, no):
+    lst = list(con.execute(select([league]).where(league.c.member_id == no)))
+    if len(lst) == 0:
+        con.execute(league.insert().values(timestamp = int(time.time()), member_id=no))
+    else:
+        con.execute(league.delete().where(league.c.id == lst[0][0]))
 
 def get_form(con, no):
     """ Get indemnity form for a member 'no'

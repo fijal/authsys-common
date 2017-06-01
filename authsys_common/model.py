@@ -61,6 +61,11 @@ free_passes = Table('free_passes', meta,
     Column('member_id', Integer, ForeignKey('members.id')),
     Column('timestamp', Integer))
 
+league = Table('league', meta,
+    Column('id', Integer, primary_key=True),
+    Column('member_id', Integer, ForeignKey('members.id')),
+    Column('timestamp', Integer))
+
 tables = {
     'tokens': tokens,
     'subscriptions': subscriptions,
@@ -69,4 +74,5 @@ tables = {
     'daily_passes': daily_passes,
     'payment_history': payment_history,
     'free_passes': free_passes,
+    'league': league,
     }
