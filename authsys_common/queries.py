@@ -20,8 +20,8 @@ def add_months(sourcedate, months):
 def get_member_list(con):
     """ List all the members with whether they paid or not
     """
-    s = select([members, tokens]).where(
-        and_(members.c.id == tokens.c.member_id, tokens.c.valid))
+    s = select([members.c.id, members.c.name]).select_from(select([members, tokens]).where(
+        and_(members.c.id == tokens.c.member_id, tokens.c.valid))).distinct().order_by(members.c.name)
     return [(x[0], x[1]) for x in con.execute(s)]
 
 def get_member_data(con, no):
