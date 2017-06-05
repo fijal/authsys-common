@@ -32,7 +32,7 @@ members = Table('members', meta,
     Column('id_number', String),
     Column('email', String),
     Column('spam_consent', Boolean),
-#    Column(), XXX find out what we want here
+#    Column('phone', String),
     Column('signature_filename', String),
     Column('timestamp', Integer),
     Column('member_type', String), # can be 'ondemand', 'recurring', null or 'perpetual'

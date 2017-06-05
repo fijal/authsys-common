@@ -36,7 +36,8 @@ def recurring_payment(con, payment_id, no, tp, callback, dry_run=False):
             'customer.email': email,
             }
     if dry_run:
-        reactor.callLater(0, callback, {}, no, tp, price)
+        return reactor.callLater(0, callback, {}, no, tp, price)
     else:
         d = treq.post(url, data)
         d.addCallback(callback, no, tp, price)
+        return d
