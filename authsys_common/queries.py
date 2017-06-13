@@ -240,8 +240,8 @@ def get_stats(con):
 
 def members_to_update(con):
     lst = list(con.execute(select([members.c.id, members.c.name, members.c.credit_card_id,
-        subscriptions.c.type, subscriptions.c.start_timestamp,
-        subscriptions.c.end_timestamp]).where(and_(
+        subscriptions.c.start_timestamp,
+        subscriptions.c.end_timestamp, subscriptions.c.type]).where(and_(
         and_(members.c.member_type == 'recurring',
         members.c.credit_card_id != None), members.c.id == subscriptions.c.member_id))))
     subs = {}
@@ -253,9 +253,9 @@ def members_to_update(con):
     d = datetime.datetime.fromtimestamp(time.time()).replace(hour=23, minute=30)
     newsubs = {}
     for k, v in subs.items():
-        if v[-1][-1] > time.mktime(d.timetuple()):
+        if v[-1][-2] > time.mktime(d.timetuple()):
             continue
-        newsubs[k] = v[-1]
+        newsubs[k] = v[-2]
     return newsubs
 
 def remove_credit_card_token(con, member_id):
