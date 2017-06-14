@@ -256,7 +256,6 @@ def members_to_update(con):
         if v[-1][-2] > time.mktime(d.timetuple()):
             continue
         newsubs[k] = v[-1]
-    print newsubs
     return newsubs
 
 def remove_credit_card_token(con, member_id):
