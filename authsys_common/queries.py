@@ -62,10 +62,23 @@ def list_indemnity_forms(con):
         and_(members.c.id == daily_passes.c.member_id,
             and_(daily_passes.c.timestamp > day_start, daily_passes.c.timestamp < day_end))),
         free_passes, members.c.id == free_passes.c.member_id), league, league.c.member_id == members.c.id)
-    return [(a, b, c, d, e, f, g) for a, b, c, d, e, f, g in con.execute(select(
-        [members.c.id, members.c.name, members.c.id_number,
+    res = []
+    for item in con.execute(select([members.c.id, members.c.name, members.c.id_number,
         members.c.timestamp, daily_passes.c.timestamp,
-        free_passes.c.timestamp, league.c.timestamp]).select_from(oj).order_by(desc(members.c.timestamp)))]
+        free_passes.c.timestamp, members.c.email, members.c.phone, members.c.emergency_phone]).select_from(oj).order_by(
+        desc(members.c.timestamp))):
+        res.append({
+            'member_id': item[0],
+            'name': item[1],
+            'member_id_number': item[2],
+            'timestamp': item[3],
+            'last_daypass_timestamp': item[4],
+            'free_pass_timestamp': item[5],
+            'email': item[6],
+            'phone': item[7],
+            'emergency_phone': item[8],
+        })
+    return res
 
 def daypass_change(con, no):
     day_start, day_end = day_start_end()
@@ -257,6 +270,53 @@ def members_to_update(con):
             continue
         newsubs[k] = v[-1]
     return newsubs
+
+def _clean_visits_per_member(con, t0=0):
+    a = list(con.execute(select([entries.c.token_id, entries.c.timestamp]).where(entries.c.timestamp > t0)))
+    d = set()
+    for item in a:
+        dt = datetime.datetime.fromtimestamp(item[1])
+        key = (dt.year, dt.month, dt.day, item[0])
+        d.add(key)
+    return d
+
+def visits_daily(con, t0=0):
+    members = {}
+    for item in _clean_visits_per_member(con, t0):
+        key = (item[0], item[1], item[2])
+        members[key] = members.get(key, 0) + 1
+    daily = {}
+    for item in list(con.execute(select([daily_passes]).where(daily_passes.c.timestamp > t0))):
+        dt = datetime.datetime.fromtimestamp(item[2])
+        key = (dt.year, dt.month, dt.day)
+        daily[key] = daily.get(key, 0) + 1
+    return {
+    'daily': daily,
+    'members': members,
+    }
+
+def visits_per_client_agg(con, t0=0):
+    d = {}
+    member_d = {}
+    for item in list(con.execute(select([members.c.id, members.c.timestamp]))):
+        member_d[item[0]] = item[1]
+    member_set = set([x[0] for x in con.execute(select([subscriptions.c.member_id]))])
+        
+    for item in list(con.execute(select([daily_passes]).where(daily_passes.c.timestamp > t0))):
+        key = item[1]
+        d[key] = d.get(key, 0) + 1
+    r = [0] * 30
+    for k, v in d.iteritems():
+        total_time = (float(time.time()) - member_d[k]) / 3600 / 24 / 30 # in months
+        if total_time > 0.1:
+        #    print v, total_time, int(v / total_time)
+        #if k in member_set:
+        #    r[0] += 1
+        #else:
+        #    r[v] += 1
+            r[int(v / total_time)] += 1
+    print sum(r[4:])
+    return r
 
 def remove_credit_card_token(con, member_id):
     con.execute(members.update().where(members.c.id == member_id).values(credit_card_id=None))
