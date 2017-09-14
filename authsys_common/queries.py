@@ -9,6 +9,8 @@ from sqlalchemy import select, desc, outerjoin, and_, func, delete, or_
 
 from .model import members, entries, tokens, subscriptions, daily_passes, payment_history,\
     free_passes, league
+from .scripts import get_config
+
 
 def add_months(sourcedate, months):
     month = sourcedate.month - 1 + months
@@ -27,25 +29,39 @@ def get_member_list(con):
 def get_member_data(con, no):
     """ Get the subscription data for a single member
     """
-    max_timestamp = list(con.execute(
-        select([func.max(subscriptions.c.end_timestamp)]).where(
-        subscriptions.c.member_id == no)))[0][0]
-    if max_timestamp is None:
-        m_id, name, tstamp, memb_type = list(con.execute(select(
-            [members.c.id, members.c.name, members.c.timestamp, members.c.member_type]).where(
-            members.c.id == no)))[0]
-        return {'member_id': m_id, 'name': name, 'subscription_type': None,
-                'start_timestamp': tstamp, 'credit_card_token': None, 'member_type': memb_type,
-                'subscription_ends': None}
-    return [{'member_id' : x[0], 'name': x[1], 'subscription_type': x[3],
-        'start_timestamp': x[2], 'subscription_starts': x[4],
-        'subscription_ends' : x[5], 'member_type': x[6],
-        'credit_card_token' : x[7]} for x in con.execute(
-        select([members.c.id, members.c.name, members.c.timestamp, subscriptions.c.type,
-        subscriptions.c.start_timestamp, subscriptions.c.end_timestamp, members.c.member_type,
+    subs = list(con.execute(select([subscriptions.c.id, subscriptions.c.start_timestamp,
+        subscriptions.c.end_timestamp, subscriptions.c.type]).where(
+        and_(subscriptions.c.end_timestamp > time.time(), subscriptions.c.member_id == no)).order_by(
+        subscriptions.c.end_timestamp)))
+    m_id, name, tstamp, memb_type, notes, sub_type, cc = list(con.execute(select(
+        [members.c.id, members.c.name, members.c.timestamp, members.c.member_type,
+        members.c.extra_notes, members.c.subscription_type,
         members.c.credit_card_id]).where(
-        and_(and_(members.c.id == no, subscriptions.c.member_id == no),
-            subscriptions.c.end_timestamp == max_timestamp)))][0]
+        members.c.id == no)))[0]
+    r = {'member_id': m_id, 'name': name,
+         'start_timestamp': tstamp, 'credit_card_token': cc, 'member_type': memb_type,
+         'subscription_starts': None, 'subscription_ends': None, 'extra_notes': notes,
+         'subscription_type': sub_type}
+    if len(subs) == 1:
+        r['subscription_starts'] = subs[0][1]
+        r['subscription_ends'] = subs[0][2]
+    if len(subs) >= 2:
+        if subs[0][3] != 'pause':
+            return {'error': "Wrong subscriptions"}
+        r['pause_starts'] = subs[0][1]
+        r['pause_ends'] = subs[0][2]
+        r['subscription_starts'] = subs[1][1]
+        r['subscription_ends'] = subs[1][2]
+    conf = get_config()
+    if r['subscription_type'] is None:
+        r['price'] = '?'
+    else:
+
+        try:
+            r['price'] = conf.get('price', r['subscription_type'])
+        except KeyError:
+            r['price'] = "?"
+    return r
 
 def day_start_end():
     now = datetime.datetime.now()
@@ -130,7 +146,7 @@ def add_one_month_subscription(con, no, type='regular', t0=None):
     con.execute(subscriptions.insert().values({
         'member_id': no,
         'type': type,
-        'start_timestamp': time.time(),
+        'start_timestamp': t0,
         'end_timestamp': end_t,
         }))
 
@@ -226,6 +242,31 @@ def change_membership_type(con, no, tp):
         tp = None
     con.execute(members.update().where(members.c.id == no).values(member_type=tp))
 
+def change_subscription_type(con, no, tp):
+    con.execute(members.update().where(members.c.id == no).values(subscription_type=tp))
+    r = list(con.execute(
+        select([func.max(subscriptions.c.end_timestamp)]).where(
+        subscriptions.c.member_id == no)))
+    if len(r) == 0:
+        return
+    max_timestamp = r[0][0]
+
+    subscr = list(con.execute(select([subscriptions.c.id]).where(
+            and_(subscriptions.c.member_id == no, subscriptions.c.end_timestamp == max_timestamp))))
+    assert len(subscr) == 1
+    subscr_id = subscr[0][0]
+    con.execute(subscriptions.update().where(subscriptions.c.id == subscr_id).values(
+        type=tp))
+
+def change_subscription_ends(con, no, end_timestamp):
+    r = list(con.execute(
+        select([func.max(subscriptions.c.end_timestamp)]).where(
+        subscriptions.c.member_id == no)))
+    if len(r) == 0:
+        return
+    con.execute(subscriptions.update().where(subscriptions.c.end_timestamp == r[0][0]).values(
+        end_timestamp = end_timestamp))
+
 def is_valid_token(con, token_id, t):
     r = [(a, b, c, d) for a, b, c, d in
     list(con.execute(select([members.c.name, tokens.c.id, subscriptions.c.start_timestamp,
@@ -320,3 +361,69 @@ def visits_per_client_agg(con, t0=0):
 
 def remove_credit_card_token(con, member_id):
     con.execute(members.update().where(members.c.id == member_id).values(credit_card_id=None))
+
+def save_notes(con, member_id, notes):
+    con.execute(members.update().where(members.c.id == member_id).values(extra_notes=notes))
+
+def pause_membership(con, member_id):
+    """ Membership is paused from today for a month
+    """
+    r = list(con.execute(
+        select([subscriptions.c.id, subscriptions.c.end_timestamp,
+            subscriptions.c.type]).where(
+        and_(subscriptions.c.member_id == member_id, subscriptions.c.end_timestamp > time.time())).order_by(
+        subscriptions.c.end_timestamp)))
+    if len(r) == 0:
+        return {'error': "Member not subscribed yet or membership expired"}
+    if len(r) >= 2:
+        return {'error': "Membership already paused"}
+    max_timestamp = r[0][1]
+    today = datetime.datetime.today()
+    exp_today = time.mktime(datetime.datetime(today.year, today.month, today.day, 23, 00).timetuple())
+    time_left = max_timestamp - exp_today
+    end_date = time.mktime(add_months(datetime.datetime.now(), 1).timetuple())
+    con.execute(subscriptions.update().where(subscriptions.c.id == r[0][0]).values(
+        end_timestamp=int(time.time())))
+    con.execute(subscriptions.insert().values(member_id=member_id, type='pause',
+        start_timestamp=exp_today, end_timestamp=end_date))
+    con.execute(subscriptions.insert().values(member_id=member_id, type=r[0][2],
+        start_timestamp=end_date, end_timestamp=end_date + time_left))
+
+    return {'success': True}
+
+def pause_change(con, member_id, from_timestamp, to_timestamp):
+    r = list(con.execute(
+        select([subscriptions.c.id, subscriptions.c.end_timestamp, subscriptions.c.start_timestamp,
+            subscriptions.c.type]).where(
+        and_(subscriptions.c.member_id == member_id, subscriptions.c.end_timestamp > time.time())).order_by(
+        subscriptions.c.end_timestamp)))
+    if len(r) == 0:
+        return {'error': "Member not subscribed yet or membership expired"}
+    if len(r) == 1:
+        return {'error': "Membership not paused"}
+    today = datetime.datetime.today()
+    today = time.mktime(datetime.datetime(today.year, today.month, today.day, 23, 00).timetuple())
+    delta = r[0][2] - from_timestamp + to_timestamp - r[0][1]
+    new_end = r[1][1] + delta
+    con.execute(subscriptions.update().where(subscriptions.c.id==r[1][0]).values(end_timestamp=new_end))
+    con.execute(subscriptions.update().where(subscriptions.c.id==r[0][0]).values(start_timestamp=from_timestamp,
+        end_timestamp=to_timestamp))    
+
+def unpause_membership(con, member_id):
+    r = list(con.execute(
+        select([subscriptions.c.id, subscriptions.c.end_timestamp,
+            subscriptions.c.type]).where(
+        and_(subscriptions.c.member_id == member_id, subscriptions.c.end_timestamp > time.time())).order_by(
+        subscriptions.c.end_timestamp)))
+    if len(r) == 0:
+        return {'error': "Member not subscribed yet or membership expired"}
+    if len(r) == 1:
+        return {'error': "Membership not paused"}
+    today = datetime.datetime.today()
+    pause_left = r[0][1] - time.mktime(datetime.datetime(today.year, today.month, today.day, 23, 00).timetuple())
+    end = r[1][1]
+    new_end = end - pause_left
+    con.execute(subscriptions.delete().where(subscriptions.c.id==r[0][0]))
+    con.execute(subscriptions.update().where(subscriptions.c.id==r[1][0]).values(end_timestamp=new_end))
+    return {'success': True}
+
