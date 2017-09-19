@@ -143,12 +143,8 @@ def add_one_month_subscription(con, no, type='regular', t0=None):
     if t0 is None:
         t0 = time.time()
     end_t = time.mktime(add_months(datetime.datetime.fromtimestamp(t0), 1).timetuple())
-    con.execute(subscriptions.insert().values({
-        'member_id': no,
-        'type': type,
-        'start_timestamp': t0,
-        'end_timestamp': end_t,
-        }))
+    con.execute(subscriptions.insert().values(
+        member_id=no, type= type, start_timestamp=t0, end_timestamp= end_t))
 
 def remove_subscription(con, no):
     t0 = list(con.execute(
@@ -264,8 +260,9 @@ def change_subscription_ends(con, no, end_timestamp):
         subscriptions.c.member_id == no)))
     if len(r) == 0:
         return
-    con.execute(subscriptions.update().where(subscriptions.c.end_timestamp == r[0][0]).values(
-        end_timestamp = end_timestamp))
+    if end_timestamp > time.time():
+        con.execute(subscriptions.update().where(subscriptions.c.end_timestamp == r[0][0]).values(
+            end_timestamp = end_timestamp))
 
 def is_valid_token(con, token_id, t):
     r = [(a, b, c, d) for a, b, c, d in
