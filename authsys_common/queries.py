@@ -260,8 +260,14 @@ def change_subscription_ends(con, no, end_timestamp):
         subscriptions.c.member_id == no)))
     if len(r) == 0:
         return
+    max_timestamp = r[0][0]
+
+    subscr = list(con.execute(select([subscriptions.c.id]).where(
+            and_(subscriptions.c.member_id == no, subscriptions.c.end_timestamp == max_timestamp))))
+    assert len(subscr) == 1
+    subscr_id = subscr[0][0]
     if end_timestamp > time.time():
-        con.execute(subscriptions.update().where(subscriptions.c.end_timestamp == r[0][0]).values(
+        con.execute(subscriptions.update().where(subscriptions.c.id == subscr_id).values(
             end_timestamp = end_timestamp))
 
 def is_valid_token(con, token_id, t):
