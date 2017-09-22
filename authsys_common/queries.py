@@ -45,9 +45,7 @@ def get_member_data(con, no):
     if len(subs) == 1:
         r['subscription_starts'] = subs[0][1]
         r['subscription_ends'] = subs[0][2]
-    if len(subs) >= 2:
-        if subs[0][3] != 'pause':
-            return {'error': "Wrong subscriptions"}
+    if len(subs) >= 2 and subs[0][3] == 'pause':
         r['pause_starts'] = subs[0][1]
         r['pause_ends'] = subs[0][2]
         r['subscription_starts'] = subs[1][1]
