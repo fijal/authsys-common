@@ -402,6 +402,8 @@ def pause_change(con, member_id, from_timestamp, to_timestamp):
         return {'error': "Member not subscribed yet or membership expired"}
     if len(r) == 1:
         return {'error': "Membership not paused"}
+    if to_timestamp > from_timestamp:
+        return {'error': 'End higher than start'}
     today = datetime.datetime.today()
     today = time.mktime(datetime.datetime(today.year, today.month, today.day, 23, 00).timetuple())
     delta = r[0][2] - from_timestamp + to_timestamp - r[0][1]
