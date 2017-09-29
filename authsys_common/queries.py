@@ -404,11 +404,12 @@ def pause_change(con, member_id, from_timestamp, to_timestamp):
         return {'error': "Membership not paused"}
     if to_timestamp > from_timestamp:
         return {'error': 'End higher than start'}
-    today = datetime.datetime.today()
-    today = time.mktime(datetime.datetime(today.year, today.month, today.day, 23, 00).timetuple())
+    if from_timestamp > time.time():
+        return {'error': 'cannot change past dates'}
     delta = r[0][2] - from_timestamp + to_timestamp - r[0][1]
     new_end = r[1][1] + delta
-    con.execute(subscriptions.update().where(subscriptions.c.id==r[1][0]).values(end_timestamp=new_end))
+    con.execute(subscriptions.update().where(subscriptions.c.id==r[1][0]).values(end_timestamp=new_end,
+        start_timestamp=from_timestamp))
     con.execute(subscriptions.update().where(subscriptions.c.id==r[0][0]).values(start_timestamp=from_timestamp,
         end_timestamp=to_timestamp))    
 
