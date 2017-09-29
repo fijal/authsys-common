@@ -402,16 +402,17 @@ def pause_change(con, member_id, from_timestamp, to_timestamp):
         return {'error': "Member not subscribed yet or membership expired"}
     if len(r) == 1:
         return {'error': "Membership not paused"}
-    if to_timestamp > from_timestamp:
+    if to_timestamp < from_timestamp:
         return {'error': 'End higher than start'}
-    if from_timestamp > time.time():
+    if from_timestamp < time.time() and from_timestamp != r[0][2]:
         return {'error': 'cannot change past dates'}
     delta = r[0][2] - from_timestamp + to_timestamp - r[0][1]
     new_end = r[1][1] + delta
     con.execute(subscriptions.update().where(subscriptions.c.id==r[1][0]).values(end_timestamp=new_end,
-        start_timestamp=from_timestamp))
+        start_timestamp=to_timestamp))
     con.execute(subscriptions.update().where(subscriptions.c.id==r[0][0]).values(start_timestamp=from_timestamp,
         end_timestamp=to_timestamp))    
+    return {'success': 'ok'}
 
 def unpause_membership(con, member_id):
     r = list(con.execute(
