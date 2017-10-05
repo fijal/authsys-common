@@ -6,12 +6,7 @@ from authsys_common import queries as q
 
 def recurring_payment(con, payment_id, no, tp, callback, dry_run=False):
     conf = get_config()
-    if tp == "before4":
-        price = conf.get("price", "before4")
-    elif tp == "youth":
-        price = conf.get("price", "youth")
-    else:
-        price = conf.get("price", "regular")
+    price = conf.get('price', tp)
     url = conf.get('payment', 'base') + '/v1/registrations/' + payment_id + '/payments'
     name, email = q.get_customer_name_email(con, no)
     # invent
