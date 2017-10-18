@@ -250,8 +250,11 @@ def change_subscription_type(con, no, tp):
 
     subscr = list(con.execute(select([subscriptions.c.id]).where(
             and_(subscriptions.c.member_id == no, subscriptions.c.end_timestamp == max_timestamp))))
-    assert len(subscr) == 1
-    subscr_id = subscr[0][0]
+    if len(subscr) == 2:
+        subscr_id = subscr[1][0]
+    else:
+        assert len(subscr) == 1, repr(subscr)
+        subscr_id = subscr[0][0]
     con.execute(subscriptions.update().where(subscriptions.c.id == subscr_id).values(
         type=tp))
 
