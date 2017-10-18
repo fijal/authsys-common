@@ -42,6 +42,9 @@ def get_member_data(con, no):
          'start_timestamp': tstamp, 'credit_card_token': cc, 'member_type': memb_type,
          'subscription_starts': None, 'subscription_ends': None, 'extra_notes': notes,
          'subscription_type': sub_type}
+    if len(subs) == 2 and subs[0][3] != 'pause':
+        r['subscription_starts'] = subs[1][1]
+        r['subscription_ends'] = subs[1][2]
     if len(subs) == 1:
         r['subscription_starts'] = subs[0][1]
         r['subscription_ends'] = subs[0][2]
