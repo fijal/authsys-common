@@ -53,6 +53,14 @@ def get_member_data(con, no):
         r['pause_ends'] = subs[0][2]
         r['subscription_starts'] = subs[1][1]
         r['subscription_ends'] = subs[1][2]
+    if len(subs) == 0:
+        subs = list(con.execute(select([subscriptions.c.id, subscriptions.c.start_timestamp,
+            subscriptions.c.end_timestamp, subscriptions.c.type]).where(
+            subscriptions.c.member_id == no).order_by(
+            subscriptions.c.end_timestamp)))
+        if len(subs) > 0:
+            r['last_subscr_ended'] = subs[-1][2]
+
     conf = get_config()
     if r['subscription_type'] is None:
         r['price'] = '?'
