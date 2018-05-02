@@ -131,9 +131,16 @@ def league_register(con, no):
 def get_form(con, no):
     """ Get indemnity form for a member 'no'
     """
-    return list(list(con.execute(select([members.c.id,
+    l = list(list(con.execute(select([members.c.id,
         members.c.name,
-        members.c.id_number]).where(members.c.id == no)))[0])
+        members.c.id_number,
+        members.c.extra_notes]).where(members.c.id == no)))[0])
+    return {
+        'id': l[0],
+        'name': l[1],
+        'id_number': l[2],
+        'extra_notes': l[3],
+    }
 
 def unrecognized_entries_after(con, timestamp):
     """ List all unrecognized entries after 'timestamp'
