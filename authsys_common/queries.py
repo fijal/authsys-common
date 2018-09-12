@@ -333,7 +333,7 @@ def members_to_update(con):
             continue
         # double check
         l = list(con.execute(select([subscriptions.c.id]).where(and_(subscriptions.c.member_id == k,
-                                                            subscriptions.c.end_timestamp > time.time()))))
+                                                                     subscriptions.c.end_timestamp > time.mktime(d.timetuple()) + 30))))
         if l:
             newsubs[k] = ("Explosion", v[-1])
         else:
