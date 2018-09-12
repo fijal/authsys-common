@@ -331,7 +331,13 @@ def members_to_update(con):
     for k, v in subs.items():
         if v[-1][-2] > time.mktime(d.timetuple()):
             continue
-        newsubs[k] = v[-1]
+        # double check
+        l = list(con.execute(select([subscriptions.c.id]).where(and_(subscriptions.c.member_id == k,
+                                                            subscriptions.c.end_timestamp > time.time()))))
+        if l:
+            newsubs[k] = ("Explosion", v[-1])
+        else:
+            newsubs[k] = v[-1]
     return newsubs
 
 def _clean_visits_per_member(con, t0=0):
