@@ -459,3 +459,10 @@ def unpause_membership(con, member_id):
     con.execute(subscriptions.update().where(subscriptions.c.id==r[1][0]).values(end_timestamp=new_end))
     return {'success': True}
 
+def check_one_month(con, member_id):
+    l = list(con.execute(select([subscriptions.c.end_timestamp]).where(
+        subscriptions.c.member_id == member_id).order_by(subscriptions.c.end_timestamp)))
+    if not l:
+        return False
+    return time.time() - l[-1][0] < 3600 * 24 * 28
+
