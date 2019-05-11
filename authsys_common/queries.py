@@ -203,15 +203,15 @@ def entries_after(con, timestamp):
             subscriptions.c.end_timestamp >= entries.c.timestamp),
                            and_(members.c.member_type == 'perpetual', members.c.id == subscriptions.c.member_id)))
     r = con.execute(select([entries.c.token_id, members.c.name,
-        entries.c.timestamp, subscriptions.c.end_timestamp, subscriptions.c.type, members.c.member_type]).select_from(oj).where(
+        entries.c.timestamp, subscriptions.c.end_timestamp, subscriptions.c.type, members.c.member_type, members.c.id]).select_from(oj).where(
         entries.c.timestamp >= timestamp).order_by(desc(entries.c.timestamp)))
     l = []
     last_token_id = None
-    for (token_id, b, c, d, tp, member_tp) in r:
+    for (token_id, b, c, d, tp, member_tp, member_id) in r:
         if tp == 'regular' and token_id == last_token_id:
             l.pop()
         last_token_id = token_id
-        l.append((token_id, b, c, d, tp, member_tp))
+        l.append((token_id, b, c, d, tp, member_tp, member_id))
     return l
 
 def max_id_of_payment_history(con):
