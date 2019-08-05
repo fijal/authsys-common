@@ -21,7 +21,7 @@ def recurring_payment(con, payment_id, no, tp, callback, dry_run=False):
             'authentication.userId' : conf.get('payment', 'userId'),
             'authentication.password' : conf.get('payment', 'password'),
             'authentication.entityId' : conf.get('payment', 'recurringEntityId'),
-            'amount' : price + ".00",
+            'amount' : price,
             'currency' : 'ZAR',
             'paymentType' : 'DB',
             'recurringType': 'REPEATED',
