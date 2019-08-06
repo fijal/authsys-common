@@ -294,7 +294,7 @@ def is_valid_token(con, token_id, t):
     list(con.execute(select([members.c.name, tokens.c.id, subscriptions.c.start_timestamp,
         subscriptions.c.end_timestamp]).where(and_(tokens.c.id == token_id,
         members.c.id == tokens.c.member_id, tokens.c.valid,
-        subscriptions.c.member_id == members.c.id, or_(subscriptions.c.end_timestamp > t, subscriptions.c.type == 'recurring'),
+        subscriptions.c.member_id == members.c.id, or_(subscriptions.c.end_timestamp > t, members.c.member_type == 'perpetual'),
         subscriptions.c.start_timestamp - 3600 * 24 < t))))]
     return len(r) == 1
 
