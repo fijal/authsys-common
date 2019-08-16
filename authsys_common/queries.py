@@ -114,12 +114,16 @@ def daypass_change(con, no):
     else:
         con.execute(daily_passes.delete().where(daily_passes.c.id == lst[0][0]))
 
-def freepass_change(con, no):
-    lst = list(con.execute(select([free_passes]).where(free_passes.c.member_id == no)))
+def member_visit_change(con, no):
+    lst1 = list(con.execute([tokens.c.id]).where(tokens.c.member_id == no))
+    if not lst1:
+        return
+    token_id = lst1[0][0]
+    lst = list(con.execute(select([entries.c.id]).where(token_id == entries.c.token_id)))
     if len(lst) == 0:
-        con.execute(free_passes.insert().values(timestamp = int(time.time()), member_id=no))
+        con.execute(entries.insert().values(timestamp = int(time.time()), token_id=token_id))
     else:
-        con.execute(free_passes.delete().where(free_passes.c.id == lst[0][0]))
+        con.execute(entries.delete().where(entries.c.id == lst[0][0]))
 
 def league_register(con, no):
     lst = list(con.execute(select([league]).where(league.c.member_id == no)))
