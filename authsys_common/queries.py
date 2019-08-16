@@ -115,7 +115,7 @@ def daypass_change(con, no):
         con.execute(daily_passes.delete().where(daily_passes.c.id == lst[0][0]))
 
 def member_visit_change(con, no):
-    lst1 = list(con.execute([tokens.c.id]).where(tokens.c.member_id == no))
+    lst1 = list(con.execute(select([tokens.c.id]).where(tokens.c.member_id == no)))
     if not lst1:
         return
     token_id = lst1[0][0]
