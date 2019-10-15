@@ -82,15 +82,14 @@ def list_indemnity_forms(con):
     """ List all the indemnity forms that have no assigned tokens
     """
     day_start, day_end = day_start_end()
-    oj = outerjoin(outerjoin(outerjoin(
+    oj = outerjoin(
         outerjoin(members, tokens, members.c.id == tokens.c.member_id), daily_passes,
         and_(members.c.id == daily_passes.c.member_id,
-            and_(daily_passes.c.timestamp > day_start, daily_passes.c.timestamp < day_end))),
-        free_passes, members.c.id == free_passes.c.member_id), league, league.c.member_id == members.c.id)
+            and_(daily_passes.c.timestamp > day_start, daily_passes.c.timestamp < day_end)))
     res = []
     for item in con.execute(select([members.c.id, members.c.name, members.c.id_number,
         members.c.timestamp, daily_passes.c.timestamp,
-        free_passes.c.timestamp, members.c.email, members.c.phone, members.c.emergency_phone]).select_from(oj).order_by(
+        members.c.email, members.c.phone, members.c.emergency_phone]).select_from(oj).order_by(
         desc(members.c.timestamp))):
         res.append({
             'member_id': item[0],
@@ -98,10 +97,9 @@ def list_indemnity_forms(con):
             'member_id_number': item[2],
             'timestamp': item[3],
             'last_daypass_timestamp': item[4],
-            'free_pass_timestamp': item[5],
-            'email': item[6],
-            'phone': item[7],
-            'emergency_phone': item[8],
+            'email': item[5],
+            'phone': item[6],
+            'emergency_phone': item[7],
         })
     return res
 
