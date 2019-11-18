@@ -230,7 +230,7 @@ def entries_after(con, timestamp):
             res[r['member_id']] = result
 
     res = res.values()
-    res.sort(lambda a, b: cmp(a['timestamp'], b['timestamp']))
+    res.sort(lambda a, b: -cmp(a['timestamp'], b['timestamp']))
     return res
 
 def max_id_of_payment_history(con):
