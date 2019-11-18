@@ -87,10 +87,14 @@ def list_indemnity_forms(con):
         and_(members.c.id == daily_passes.c.member_id,
             and_(daily_passes.c.timestamp > day_start, daily_passes.c.timestamp < day_end)))
     res = []
+    already = {}
     for item in con.execute(select([members.c.id, members.c.name, members.c.id_number,
         members.c.timestamp, daily_passes.c.timestamp,
         members.c.email, members.c.phone, members.c.emergency_phone]).select_from(oj).order_by(
         desc(members.c.timestamp))):
+        if item[0] in already:
+            continue
+        already[item[0]] = None
         res.append({
             'member_id': item[0],
             'name': item[1],
@@ -198,23 +202,36 @@ def entries_after(con, timestamp):
     """ List all the entries after 'timestamp' with extra information
     about the subscription and validity
     """
-    oj = outerjoin(outerjoin(outerjoin(entries, tokens, and_(
-        entries.c.token_id == tokens.c.id, tokens.c.valid)),
-        members, members.c.id == tokens.c.member_id),
-        subscriptions, or_(and_(subscriptions.c.member_id == members.c.id,
-            subscriptions.c.end_timestamp >= entries.c.timestamp),
-                           and_(members.c.member_type == 'perpetual', members.c.id == subscriptions.c.member_id)))
-    r = con.execute(select([entries.c.token_id, members.c.name,
-        entries.c.timestamp, subscriptions.c.end_timestamp, subscriptions.c.type, members.c.member_type, members.c.id]).select_from(oj).where(
-        entries.c.timestamp >= timestamp).order_by(desc(entries.c.timestamp)))
-    l = []
-    last_token_id = None
-    for (token_id, b, c, d, tp, member_tp, member_id) in r:
-        if tp == 'regular' and token_id == last_token_id:
-            l.pop()
-        last_token_id = token_id
-        l.append((token_id, b, c, d, tp, member_tp, member_id))
-    return l
+    s = con.execute(select([entries.c.timestamp, entries.c.token_id, tokens.c.member_id,
+                            members.c.name, members.c.member_type]).where(
+        and_(and_(entries.c.token_id == tokens.c.id, members.c.id == tokens.c.member_id),
+            entries.c.timestamp > timestamp)).order_by(desc(entries.c.timestamp)))
+    ent = [{'timestamp': _timestamp, 'token_id': _tok_id, 'member_id': _memb_id, 'name': _memb_name, 'member_type': _member_type} for
+           _timestamp, _tok_id, _memb_id, _memb_name, _member_type in list(s)]
+    res = {}
+
+    for r in ent:
+        if r.member_type == 'perpetual':
+            result = r.copy()
+            result['subscription_end_timestamp'] = int(time.time()) + 3600 * 24 * 30
+            result['sub_type'] = None
+            res[r['member_id']] = result
+        else:
+            q = [(a, b, c) for a, b, c in list(con.execute(select([subscriptions.c.type, subscriptions.c.start_timestamp, subscriptions.c.end_timestamp]).where(
+                and_(and_(subscriptions.c.member_id == r['member_id'], subscriptions.c.start_timestamp < timestamp),
+                    subscriptions.c.end_timestamp > timestamp))))]
+            result = r.copy()
+            if len(q) > 0:
+                result['subscription_end_timestamp'] = q[0][2]
+                result['sub_type'] = q[0][0]
+            else:
+                result['subscription_end_timestamp'] = None
+                result['sub_type'] = None
+            res[r['member_id']] = result
+
+    res = res.values()
+    res.sort(lambda a, b: cmp(a.timestamp, b.timestamp))
+    return res
 
 def max_id_of_payment_history(con):
     return list(con.execute(select([func.max(payment_history.c.id)])))[0][0]
