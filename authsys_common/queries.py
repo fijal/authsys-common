@@ -221,8 +221,6 @@ def entries_after(con, timestamp):
                 subscriptions.c.member_id == r['member_id']).order_by(subscriptions.c.end_timestamp)))]
             result = r.copy()
             if len(q) > 0:
-                if len(q) > 1:
-                    print q
                 result['subscription_end_timestamp'] = q[-1][2]
                 result['sub_type'] = q[-1][0]
             else:
