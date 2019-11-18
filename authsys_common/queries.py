@@ -218,8 +218,7 @@ def entries_after(con, timestamp):
             res[r['member_id']] = result
         else:
             q = [(a, b, c) for a, b, c in list(con.execute(select([subscriptions.c.type, subscriptions.c.start_timestamp, subscriptions.c.end_timestamp]).where(
-                and_(and_(subscriptions.c.member_id == r['member_id'], subscriptions.c.start_timestamp < r['timestamp']),
-                    subscriptions.c.end_timestamp > r['timestamp'])).order_by(subscriptions.c.end_timestamp)))]
+                subscriptions.c.member_id == r['member_id']).order_by(subscriptions.c.end_timestamp)))]
             result = r.copy()
             if len(q) > 0:
                 if len(q) > 1:
