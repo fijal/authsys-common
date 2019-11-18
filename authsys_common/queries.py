@@ -211,7 +211,7 @@ def entries_after(con, timestamp):
     res = {}
 
     for r in ent:
-        if r.member_type == 'perpetual':
+        if r['member_type'] == 'perpetual':
             result = r.copy()
             result['subscription_end_timestamp'] = int(time.time()) + 3600 * 24 * 30
             result['sub_type'] = None
