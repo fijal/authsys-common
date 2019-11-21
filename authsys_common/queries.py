@@ -226,6 +226,9 @@ def entries_after(con, timestamp):
             else:
                 result['subscription_end_timestamp'] = None
                 result['sub_type'] = None
+            if r['member_id'] in res:
+                if res[r['member_id']]['timestamp'] > r['timestamp']:
+                    continue
             res[r['member_id']] = result
 
     res = res.values()
