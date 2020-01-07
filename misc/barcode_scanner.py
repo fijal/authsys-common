@@ -102,7 +102,7 @@ def main(device):
 
 
 try:
-   t = threading.Thread(thread=main)
+   t = threading.Thread(target=main)
    t.start(args=(device,))
    runner = ApplicationRunner(
        environ.get("AUTOBAHN_DEMO_ROUTER", u"ws://127.0.0.1:8080/ws"),
