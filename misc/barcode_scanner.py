@@ -62,6 +62,11 @@ class State(object):
 
 state = State()
 
+def reconnect_to_brain():
+    print "RECONNECTING"
+    d = runner.run(Component, start_reactor=False)
+    d.addErrback(lambda *args: reactor.callLater(1.0, reconnect_to_brain))
+
 class Component(ApplicationSession):
    def onJoin(self, details):
       state.feedback = self
@@ -69,6 +74,7 @@ class Component(ApplicationSession):
 
    def onDisconnect(self):
       state.feedback = None
+      reactor.callLater(1.0, reconnect_to_brain)
       print "DISCONNECTED"
 
 
