@@ -105,7 +105,7 @@ try:
    t = threading.Thread(target=main, args=(device,))
    t.start()
    runner = ApplicationRunner(
-       environ.get("AUTOBAHN_DEMO_ROUTER", u"ws://127.0.0.1:8080/ws"),
+       u"ws://127.0.0.1:8080/ws",
        u"authsys",
    )
    d = runner.run(Component, start_reactor=False)
