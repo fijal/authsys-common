@@ -235,6 +235,9 @@ def entries_after(con, timestamp):
     res.sort(lambda a, b: -cmp(a['timestamp'], b['timestamp']))
     return res
 
+def last_visits_by_user_id(con, user_id):
+    xxx
+
 def max_id_of_payment_history(con):
     return list(con.execute(select([func.max(payment_history.c.id)])))[0][0]
 

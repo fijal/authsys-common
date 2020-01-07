@@ -1,6 +1,7 @@
 
 from sqlalchemy import (Table, Column, Integer, Boolean,
-    String, MetaData, ForeignKey)
+    String, MetaData, ForeignKey, create_engine)
+
 
 meta = MetaData()
 
@@ -70,6 +71,17 @@ league = Table('league', meta,
     Column('member_id', Integer, ForeignKey('members.id')),
     Column('timestamp', Integer))
 
+vouchers = Table('vouchers', meta,
+    Column('number', Integer, primary_key=True),
+    Column('unique_id', String),
+    Column('fullname', String),
+    Column('reason', String),
+    Column('extra', String),
+    Column('timestamp', Integer),
+    Column('used', Boolean)
+)
+
+
 tables = {
     'tokens': tokens,
     'subscriptions': subscriptions,
@@ -79,4 +91,13 @@ tables = {
     'payment_history': payment_history,
     'free_passes': free_passes,
     'league': league,
+    'vouchers': vouchers
     }
+
+if __name__ == '__main__':
+    def metadata_dump(sql, *multiparams, **params):
+        # print or write to log or file etc
+        print(sql.compile(dialect=engine.dialect))
+
+    engine = create_engine('sqlite:///:memory:', strategy='mock', executor=metadata_dump)
+    meta.create_all(engine)
