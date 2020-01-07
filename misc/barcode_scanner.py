@@ -91,6 +91,7 @@ def main(device):
          elif ar[2] == CR_CHAR:
             state.item = msg
             if state.feedback is not None:
+               print("Publishing", msg)
                state.feedback.publish('com.vouchers.scan', msg)
             msg = ''
          else:
