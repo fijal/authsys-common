@@ -323,7 +323,6 @@ def is_valid_token(con, token_id, t):
             break
     else:
         return False
-    print (entry)
     if entry['member_type'] == 'perpetual':
         return True
     if entry['subscription_end_timestamp'] > time.time():
