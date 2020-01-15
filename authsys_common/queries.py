@@ -314,13 +314,10 @@ def change_subscription_ends(con, no, end_timestamp):
             end_timestamp = end_timestamp))
 
 def is_valid_token(con, token_id, t):
-    r = [(a, b, c, d) for a, b, c, d in
-    list(con.execute(select([members.c.name, tokens.c.id, subscriptions.c.start_timestamp,
-        subscriptions.c.end_timestamp]).where(and_(tokens.c.id == token_id,
-        members.c.id == tokens.c.member_id, tokens.c.valid,
-        subscriptions.c.member_id == members.c.id, or_(subscriptions.c.end_timestamp > t, members.c.member_type == 'perpetual'),
-        subscriptions.c.start_timestamp - 3600 * 24 < t))))]
-    return len(r) == 1
+    r = list(con.execute(select([tokens.c.member_id]).where(and_(tokens.c.id == token_id, tokens.c.valid == True))))
+    if len(r) == 0:
+        return False
+    return r[0][0] in entries_after(con, time.time() - 3600 * 24)
 
 def get_stats(con):
     total_ondemand = list(con.execute(select([func.count()]).select_from(select([members, subscriptions]).where(
