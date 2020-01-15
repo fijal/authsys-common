@@ -317,7 +317,16 @@ def is_valid_token(con, token_id, t):
     r = list(con.execute(select([tokens.c.member_id]).where(and_(tokens.c.id == token_id, tokens.c.valid == True))))
     if len(r) == 0:
         return False
-    return r[0][0] in entries_after(con, time.time() - 3600 * 24)
+    entries = entries_after(con, time.time() - 3600 * 24)
+    if r[0][0] not in entries:
+        return False
+    entry = entries[r[0][0]]
+    if entry['member_type'] == 'perpetual':
+        return True
+    if entry['subscription_end_timestamp'] > time.time():
+        return True
+    return False
+
 
 def get_stats(con):
     total_ondemand = list(con.execute(select([func.count()]).select_from(select([members, subscriptions]).where(
