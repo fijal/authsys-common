@@ -326,9 +326,11 @@ def is_valid_token(con, token_id, t):
     if len(r) == 0:
         return False
     entries = entries_after(con, time.time() - 3600 * 24)
-    if r[0][0] not in entries:
+    for entry in entries:
+        if entry['member_id'] == r[0][0]:
+            break
+    else:
         return False
-    entry = entries[r[0][0]]
     if entry['member_type'] == 'perpetual':
         return True
     if entry['subscription_end_timestamp'] > time.time():
