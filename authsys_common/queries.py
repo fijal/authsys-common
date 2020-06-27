@@ -8,7 +8,7 @@ import calendar
 from sqlalchemy import select, desc, outerjoin, and_, func, delete, or_
 
 from .model import members, entries, tokens, subscriptions, daily_passes, payment_history,\
-    free_passes, league
+    free_passes, league, covid_indemnity
 from .scripts import get_config
 
 
@@ -42,6 +42,7 @@ def get_member_data(con, no):
          'start_timestamp': tstamp, 'credit_card_token': cc, 'member_type': memb_type,
          'subscription_starts': None, 'subscription_ends': None, 'extra_notes': notes,
          'subscription_type': sub_type}
+    r['covid_indemnity_signed'] = len(list(con.execute(select([covid_indemnity.c.member_id]).where(covid_indemnity.c.member_id == no))))
     if len(subs) == 2 and subs[0][3] != 'pause':
         r['subscription_starts'] = subs[1][1]
         r['subscription_ends'] = subs[1][2]
@@ -82,15 +83,16 @@ def list_indemnity_forms(con):
     """ List all the indemnity forms that have no assigned tokens
     """
     day_start, day_end = day_start_end()
-    oj = outerjoin(
+    oj = outerjoin(outerjoin(
         outerjoin(members, tokens, members.c.id == tokens.c.member_id), daily_passes,
         and_(members.c.id == daily_passes.c.member_id,
-            and_(daily_passes.c.timestamp > day_start, daily_passes.c.timestamp < day_end)))
+            and_(daily_passes.c.timestamp > day_start, daily_passes.c.timestamp < day_end))),
+        covid_indemnity, members.c.id == covid_indemnity.c.member_id)
     res = []
     already = {}
     for item in con.execute(select([members.c.id, members.c.name, members.c.id_number,
         members.c.timestamp, daily_passes.c.timestamp,
-        members.c.email, members.c.phone, members.c.emergency_phone]).select_from(oj).order_by(
+        members.c.email, members.c.phone, members.c.emergency_phone, covid_indemnity.c.member_id]).select_from(oj).order_by(
         desc(members.c.timestamp))):
         if item[0] in already:
             continue
@@ -104,6 +106,7 @@ def list_indemnity_forms(con):
             'email': item[5],
             'phone': item[6],
             'emergency_phone': item[7],
+            'covid_indemnity_signed': item[8] is not None
         })
     return res
 
@@ -211,6 +214,9 @@ def entries_after(con, timestamp):
     res = {}
 
     for r in ent:
+        rr = list(con.execute(select([covid_indemnity.c.member_id]).where(
+            covid_indemnity.c.member_id == r['member_id'])))
+        r['covid_indemnity'] = len(rr) != 0
         if r['member_type'] == 'perpetual':
             result = r.copy()
             result['subscription_end_timestamp'] = int(time.time()) + 3600 * 24 * 30
@@ -233,7 +239,9 @@ def entries_after(con, timestamp):
 
     res = res.values()
     res.sort(lambda a, b: -cmp(a['timestamp'], b['timestamp']))
-    return res
+    r = list(con.execute(select([daily_passes.c.timestamp]).where(daily_passes.c.timestamp > timestamp - 3600 * 2)))
+    total = len(res) + len(r)
+    return {'entries': res, 'total': total}
 
 def last_visits_by_user_id(con, user_id):
     xxx

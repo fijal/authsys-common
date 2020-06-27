@@ -81,6 +81,12 @@ vouchers = Table('vouchers', meta,
     Column('used', Boolean)
 )
 
+covid_indemnity = Table('covid_indemnity', meta,
+    Column('id', Integer, primary_key=True),
+    Column('timestamp', Integer),
+    Column('member_id', Integer, ForeignKey('members.id'))
+)
+
 
 tables = {
     'tokens': tokens,
@@ -91,7 +97,8 @@ tables = {
     'payment_history': payment_history,
     'free_passes': free_passes,
     'league': league,
-    'vouchers': vouchers
+    'vouchers': vouchers,
+    'covid_indemnity': covid_indemnity
     }
 
 if __name__ == '__main__':
