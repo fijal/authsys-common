@@ -325,7 +325,7 @@ def is_valid_token(con, token_id, t):
     r = list(con.execute(select([tokens.c.member_id]).where(and_(tokens.c.id == token_id, tokens.c.valid == True))))
     if len(r) == 0:
         return False
-    entries = entries_after(con, time.time() - 3600 * 24)
+    entries = entries_after(con, time.time() - 3600 * 24)['entries']
     for entry in entries:
         if entry['member_id'] == r[0][0]:
             break
