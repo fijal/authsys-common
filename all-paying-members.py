@@ -22,8 +22,12 @@ lst = list(con.execute(
 
 for item in lst:
     try:
-        del current[item[0]]
+        del current[item[1]]
     except KeyError:
         pass
 
-pprint(lst)
+for _, item, _ in lst:
+    print item
+del current['Email address']
+for k in current:
+    print k

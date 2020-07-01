@@ -239,7 +239,7 @@ def entries_after(con, timestamp):
 
     res = res.values()
     res.sort(lambda a, b: -cmp(a['timestamp'], b['timestamp']))
-    r = list(con.execute(select([daily_passes.c.timestamp]).where(daily_passes.c.timestamp > timestamp - 3600 * 2)))
+    r = list(con.execute(select([daily_passes.c.timestamp]).where(daily_passes.c.timestamp > time.time() - 3600 * 2)))
     total = len(res) + len(r)
     return {'entries': res, 'total': total}
 
