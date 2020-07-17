@@ -239,8 +239,12 @@ def entries_after(con, timestamp):
 
     res = res.values()
     res.sort(lambda a, b: -cmp(a['timestamp'], b['timestamp']))
+    total_entries = 0
+    for item in res:
+        if item['timestamp'] > time.time() - 3600 * 2:
+            total_entries += 1
     r = list(con.execute(select([daily_passes.c.timestamp]).where(daily_passes.c.timestamp > time.time() - 3600 * 2)))
-    total = len(res) + len(r)
+    total = total_entries + len(r)
     return {'entries': res, 'total': total}
 
 def last_visits_by_user_id(con, user_id):
