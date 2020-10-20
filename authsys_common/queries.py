@@ -84,7 +84,7 @@ def day_start_end():
     day_end = time.mktime(now.replace(hour=23, minute=0).timetuple())
     return day_start, day_end
 
-def list_indemnity_forms(con):
+def list_indemnity_forms(con, query):
     """ List all the indemnity forms that have no assigned tokens
     """
     day_start, day_end = day_start_end()
@@ -95,21 +95,27 @@ def list_indemnity_forms(con):
         covid_indemnity, members.c.id == covid_indemnity.c.member_id)
     res = []
     already = {}
+    query = query.lower()
     for item in con.execute(select([members.c.id, members.c.name, members.c.id_number,
         members.c.timestamp, daily_passes.c.timestamp,
         members.c.email, members.c.phone, members.c.emergency_phone, covid_indemnity.c.member_id]).select_from(oj).order_by(
         desc(members.c.timestamp))):
         if item[0] in already:
             continue
+        email = item[5]
+        phone = item[6]
+        name = item[1]
+        if not ((name and query in name.lower()) or (phone and query in phone.lower()) or (email and query in email.lower())):
+            continue
         already[item[0]] = None
         res.append({
             'member_id': item[0],
-            'name': item[1],
+            'name': name,
             'member_id_number': item[2],
             'timestamp': item[3],
             'last_daypass_timestamp': item[4],
-            'email': item[5],
-            'phone': item[6],
+            'email': email,
+            'phone': phone,
             'emergency_phone': item[7],
             'covid_indemnity_signed': item[8] is not None
         })
