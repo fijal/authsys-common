@@ -24,7 +24,12 @@ def get_member_list(con, query):
     """
     s = select([members.c.id, members.c.name, tokens.c.valid, members.c.phone, members.c.email]).where(
         and_(members.c.id == tokens.c.member_id, tokens.c.valid)).distinct()
-    return [{'id': x[0],'name': x[1], 'phone': x[3], 'email': x[4]} for x in con.execute(s) if query in x[1]]
+    r = []
+    query = query.lower()
+    for id, name, _, phone, email in con.execute(s):
+        if query in name.lower() or query in phone.lower() or query in email.lower():
+            r.append({'id': id,'name': name, 'phone': phone, 'email': email})
+    return r
 
 def get_member_data(con, no):
     """ Get the subscription data for a single member
