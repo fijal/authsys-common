@@ -27,7 +27,7 @@ def get_member_list(con, query):
     r = []
     query = query.lower()
     for id, name, _, phone, email in con.execute(s):
-        if query in name.lower() or query in phone.lower() or query in email.lower():
+        if (name and query in name.lower()) or (phone and query in phone.lower()) or (email and query in email.lower()):
             r.append({'id': id,'name': name, 'phone': phone, 'email': email})
     return r
 
