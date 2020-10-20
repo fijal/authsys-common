@@ -22,9 +22,9 @@ def add_months(sourcedate, months):
 def get_member_list(con):
     """ List all the members with whether they paid or not
     """
-    s = select([members.c.id, members.c.name, tokens.c.valid]).where(
+    s = select([members.c.id, members.c.name, tokens.c.valid, members.c.phone, members.c.email]).where(
         and_(members.c.id == tokens.c.member_id, tokens.c.valid)).distinct()
-    return [(x[0], x[1]) for x in con.execute(s)]
+    return [{'id': x[0],'name': x[1], 'phone': x[3], 'email': x[4]} for x in con.execute(s)]
 
 def get_member_data(con, no):
     """ Get the subscription data for a single member
