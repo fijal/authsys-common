@@ -19,12 +19,12 @@ def add_months(sourcedate, months):
     day = min(sourcedate.day, calendar.monthrange(year,month)[1])
     return datetime.datetime(year,month,day,23,00)
 
-def get_member_list(con):
+def get_member_list(con, query):
     """ List all the members with whether they paid or not
     """
     s = select([members.c.id, members.c.name, tokens.c.valid, members.c.phone, members.c.email]).where(
         and_(members.c.id == tokens.c.member_id, tokens.c.valid)).distinct()
-    return [{'id': x[0],'name': x[1], 'phone': x[3], 'email': x[4]} for x in con.execute(s)]
+    return [{'id': x[0],'name': x[1], 'phone': x[3], 'email': x[4]} for x in con.execute(s) if query in x[1]]
 
 def get_member_data(con, no):
     """ Get the subscription data for a single member
