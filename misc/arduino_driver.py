@@ -43,7 +43,7 @@ class TokenComponent(ApplicationSession):
         reactor.callLater(1.0, reconnect_to_brain)
 
     def auth_token(self, data):
-        return self.call('com.members.register_token', data)
+        return self.call(u'com.members.register_token', data)
 
 class P(LineReceiver):
     delimiter = '\n'
@@ -61,7 +61,7 @@ class P(LineReceiver):
         if not self.feedback:
             return
         try:
-            self.feedback.call('com.members.reader_visible', 0)
+            self.feedback.call(u'com.members.reader_visible', 0)
         except:
             pass
 
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     except:
         pass # eat the exception, reconnection in progress
     runner = ApplicationRunner(
-        environ.get("AUTOBAHN_ROUTER", u"ws://127.0.0.1:8087/ws"),
+        unicode(environ.get("AUTOBAHN_ROUTER", u"ws://127.0.0.1:8087/ws")),
         u"authsys"
     )
     reconnect_to_brain()
