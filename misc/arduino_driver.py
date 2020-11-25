@@ -14,11 +14,12 @@ from twisted.python import log
 log.startLogging(sys.stdout)
 
 def reconnect_to_brain():
-    print "RECONNECTING"
     if line_protocol.feedback is not None:
         return
-    d = runner.run(TokenComponent, start_reactor=False)
-    reactor.callLater(1.0, reconnect_to_brain) # always call it, just in case
+    print "RECONNECTING"
+    line_protocol.connecting = True
+    runner.run(TokenComponent, start_reactor=False)
+    reactor.callLater(1.0, reconnect_to_brain)
 
 class TokenComponent(ApplicationSession):
     def print_mandate(self, *args):
@@ -26,6 +27,9 @@ class TokenComponent(ApplicationSession):
 
     def onJoin(self, details):
         print "CONNECTED"
+        if line_protocol.feedback is not None:
+            self.disconnect()
+            return
         line_protocol.feedback = self
 
     def onConnect(self):
@@ -63,8 +67,7 @@ class P(LineReceiver):
         reactor.callLater(1.0, self.health_check_feedback)
         if not self.feedback:
             return
-        d = self.feedback.call(u'com.members.reader_visible', 0)
-        d.addErrback(lambda *args: reconnect_to_brain())
+        self.feedback.call(u'com.members.reader_visible', 0)
 
     def lineReceived(self, data):
         def errb(*args):
@@ -89,8 +92,6 @@ class P(LineReceiver):
         reactor.callLater(1.0, reconnect)
 
 def reconnect():
-    if line_protocol.feedback is None:
-        reconnect_to_brain()
     if line_protocol.connected:
         return
     try:
