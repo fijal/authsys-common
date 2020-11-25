@@ -18,7 +18,7 @@ def reconnect_to_brain():
     if line_protocol.feedback is not None:
         return
     d = runner.run(TokenComponent, start_reactor=False)
-    d.addErrback(lambda *args: reactor.callLater(1.0, reconnect_to_brain))
+    reactor.callLater(1.0, reconnect_to_brain) # always call it, just in case
 
 class TokenComponent(ApplicationSession):
     def print_mandate(self, *args):
