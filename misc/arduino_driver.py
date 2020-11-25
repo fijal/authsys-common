@@ -105,15 +105,7 @@ if __name__ == '__main__':
         pass # eat the exception, reconnection in progress
     runner = ApplicationRunner(
         environ.get("AUTOBAHN_ROUTER", u"ws://127.0.0.1:8087/ws"),
-        u"authsys",
-        extra={
-            'authentication': {
-                'wampcra': {
-                    'authid': 'frontdesk',
-                    'secret': '12345'
-                }
-            }
-        }
+        u"authsys"
     )
     reconnect_to_brain()
     reactor.run()
