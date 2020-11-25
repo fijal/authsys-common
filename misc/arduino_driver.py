@@ -64,7 +64,7 @@ class P(LineReceiver):
         if not self.feedback:
             return
         d = self.feedback.call(u'com.members.reader_visible', 0)
-        print(d)
+        d.addErrback(lambda *args: reconnect_to_brain())
 
     def lineReceived(self, data):
         def errb(*args):
