@@ -15,6 +15,8 @@ log.startLogging(sys.stdout)
 
 def reconnect_to_brain():
     print "RECONNECTING"
+    if line_protocol.feedback is not None:
+        return
     d = runner.run(TokenComponent, start_reactor=False)
     d.addErrback(lambda *args: reactor.callLater(1.0, reconnect_to_brain))
 
@@ -40,6 +42,7 @@ class TokenComponent(ApplicationSession):
 
     def onDisconnect(self):
         print "DISCONNECTED"
+        line_protocol.feedback = None
         reactor.callLater(1.0, reconnect_to_brain)
 
     def auth_token(self, data):
@@ -60,10 +63,8 @@ class P(LineReceiver):
         reactor.callLater(1.0, self.health_check_feedback)
         if not self.feedback:
             return
-        try:
-            self.feedback.call(u'com.members.reader_visible', 0)
-        except:
-            pass
+        d = self.feedback.call(u'com.members.reader_visible', 0)
+        print(d)
 
     def lineReceived(self, data):
         def errb(*args):
@@ -88,6 +89,8 @@ class P(LineReceiver):
         reactor.callLater(1.0, reconnect)
 
 def reconnect():
+    if line_protocol.feedback is None:
+        reconnect_to_brain()
     if line_protocol.connected:
         return
     try:
