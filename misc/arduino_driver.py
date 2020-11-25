@@ -46,8 +46,9 @@ class TokenComponent(ApplicationSession):
 
     def onDisconnect(self):
         print "DISCONNECTED"
-        line_protocol.feedback = None
-        reactor.callLater(1.0, reconnect_to_brain)
+        if line_protocol.feedback is self:
+            line_protocol.feedback = None
+            reactor.callLater(1.0, reconnect_to_brain)
 
     def auth_token(self, data):
         return self.call(u'com.members.register_token', data)
