@@ -322,6 +322,8 @@ def change_subscription_type(con, no, tp):
     if len(r) == 0:
         return
     max_timestamp = r[0][0]
+    if max_timestamp is None:
+        return
 
     subscr = list(con.execute(select([subscriptions.c.id]).where(
             and_(subscriptions.c.member_id == no, subscriptions.c.end_timestamp == max_timestamp))))
