@@ -46,12 +46,12 @@ def populate_with_test_data(con):
     ins = entries.insert()
     t0 = 10000
     con.execute(ins.values([
-        [1, t0, "AAAAAA08"],
-        [2, t0 + 5, "AAAAAA08"],
-        [3, t0 + 10, "BBBBBB08"],
-        [4, t0 + 20, "CCCCCC08"],
-        [5, t0 + 30, "DDDDDD08"],
-        [6, t0 + 40, "BBBBBB08"],
+        [1, t0, 0, "AAAAAA08"],
+        [2, t0 + 5, 0, "AAAAAA08"],
+        [3, t0 + 10, 0, "BBBBBB08"],
+        [4, t0 + 20, 0, "CCCCCC08"],
+        [5, t0 + 30, 0, "DDDDDD08"],
+        [6, t0 + 40, 0, "BBBBBB08"],
         ]))
     ins = tokens.insert()
     con.execute(ins.values([

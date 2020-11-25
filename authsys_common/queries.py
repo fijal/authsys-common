@@ -8,7 +8,7 @@ import calendar
 from sqlalchemy import select, desc, outerjoin, and_, func, delete, or_
 
 from .model import members, entries, tokens, subscriptions, daily_passes, payment_history,\
-    free_passes, league, covid_indemnity
+    free_passes, league, covid_indemnity, transactions
 from .scripts import get_config
 
 
@@ -38,15 +38,14 @@ def get_member_data(con, no):
         subscriptions.c.end_timestamp, subscriptions.c.type]).where(
         and_(subscriptions.c.end_timestamp > time.time(), subscriptions.c.member_id == no)).order_by(
         subscriptions.c.end_timestamp)))
-    m_id, name, tstamp, memb_type, notes, sub_type, cc = list(con.execute(select(
-        [members.c.id, members.c.name, members.c.timestamp, members.c.member_type,
-        members.c.extra_notes, members.c.subscription_type,
-        members.c.credit_card_id]).where(
+    m_id, name, phone, tstamp, memb_type, notes, sub_type, account_number = list(con.execute(select(
+        [members.c.id, members.c.name, members.c.phone, members.c.timestamp, members.c.member_type,
+        members.c.extra_notes, members.c.subscription_type, members.c.account_number]).where(
         members.c.id == no)))[0]
-    r = {'member_id': m_id, 'name': name,
-         'start_timestamp': tstamp, 'credit_card_token': cc, 'member_type': memb_type,
+    r = {'member_id': m_id, 'name': name, 'phone': phone,
+         'start_timestamp': tstamp, 'member_type': memb_type,
          'subscription_starts': None, 'subscription_ends': None, 'extra_notes': notes,
-         'subscription_type': sub_type}
+         'subscription_type': sub_type, 'account_number': account_number}
     r['covid_indemnity_signed'] = len(list(con.execute(select([covid_indemnity.c.member_id]).where(covid_indemnity.c.member_id == no))))
     if len(subs) == 2 and subs[0][3] != 'pause':
         r['subscription_starts'] = subs[1][1]
@@ -76,6 +75,8 @@ def get_member_data(con, no):
             r['price'] = conf.get('price', r['subscription_type'])
         except KeyError:
             r['price'] = "?"
+    # calculate next monday
+    r['next_monday'] = 0;
     return r
 
 def day_start_end():
@@ -126,7 +127,9 @@ def daypass_change(con, no):
     lst = list(con.execute(select([daily_passes]).where(and_(and_(daily_passes.c.timestamp > day_start,
         daily_passes.c.timestamp < day_end), daily_passes.c.member_id == no))))
     if len(lst) == 0:
-        con.execute(daily_passes.insert().values(timestamp = int(time.time()), member_id=no))
+        conf = get_config()
+        con.execute(daily_passes.insert().values(timestamp = int(time.time()), member_id=no,
+                                                 gym_id=conf.get('gym', 'id')))
     else:
         con.execute(daily_passes.delete().where(daily_passes.c.id == lst[0][0]))
 
@@ -137,7 +140,9 @@ def member_visit_change(con, no):
     token_id = lst1[0][0]
     lst = list(con.execute(select([entries.c.id]).where(token_id == entries.c.token_id)))
     if len(lst) == 0:
-        con.execute(entries.insert().values(timestamp = int(time.time()), token_id=token_id))
+        conf = get_config()
+        con.execute(entries.insert().values(timestamp = int(time.time()), token_id=token_id,
+                                            gym_id = conf.get('gym', 'id')))
     else:
         con.execute(entries.delete().where(entries.c.id == lst[0][0]))
 
@@ -288,9 +293,17 @@ def get_last_payment_id(con, no):
         desc(payment_history.c.id)).limit(1)))[0][0]
 
 def get_payment_history(con, no):
-    return [(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]) for x in 
-        con.execute(select([payment_history]).where(payment_history.c.member_id == no).order_by(
-            desc(payment_history.c.id)))]
+    return [{
+        'timestamp': x[0],
+        'price': x[1],
+        'type': x[2],
+        'description': x[3],
+        'outcome': x[4]
+    } for x in 
+        con.execute(select([transactions.c.timestamp, transactions.c.price,
+            transactions.c.type, transactions.c.description, transactions.c.outcome]).where(
+            transactions.c.member_id == no).order_by(
+            transactions.c.timestamp))]
 
 def payments_get_id_sum_tp(con, token_id):
     return [(x[0], x[1], x[2]) for x in con.execute(select([payment_history.c.member_id,
@@ -521,3 +534,15 @@ def check_one_month(con, member_id):
         return False
     return time.time() - l[-1][0] < 3600 * 24 * 28
 
+def update_account_number(con, member_id, name, price, contact_number, address, branch_code, account_number):
+    con.execute(members.update().where(members.c.id==member_id).values(name=name, phone=contact_number,
+        address=address, branch_code=branch_code, account_number=account_number, debit_order_signup_timestamp=int(time.time())))
+    # record that the transaction initation took place
+    con.execute(transactions.insert().values({
+        'member_id': member_id,
+        'timestamp': int(time.time()),
+        'price': price,
+        'type': "capture",
+        'description': "Captured bank data",
+        'outcome': 'success'
+    }))

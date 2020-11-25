@@ -1,12 +1,17 @@
 
+import sys
 from os import environ
 
 from autobahn.twisted.wamp import ApplicationSession, ApplicationRunner
+from autobahn.wamp import auth
 
 from twisted.internet.serialport import SerialPort
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.protocols.basic import LineReceiver
+from twisted.python import log
+
+log.startLogging(sys.stdout)
 
 def reconnect_to_brain():
     print "RECONNECTING"
@@ -14,9 +19,24 @@ def reconnect_to_brain():
     d.addErrback(lambda *args: reactor.callLater(1.0, reconnect_to_brain))
 
 class TokenComponent(ApplicationSession):
+    def print_mandate(self, *args):
+        print("printing mandate")
+
     def onJoin(self, details):
         print "CONNECTED"
         line_protocol.feedback = self
+
+    def onConnect(self):
+        self.join(self.config.realm, [u"wampcra"], u"frontdesk")
+
+    def onChallenge(self, challenge):
+        if challenge.method != u'wampcra':
+            raise Exception("invalid auth method " + challenge.method)
+        if u'salt' in challenge.extra:
+            raise Exception("salt unimplemented")
+        return auth.compute_wcs(environ.get("AUTOBAHN_SECRET", None),
+                                challenge.extra['challenge'])
+
 
     def onDisconnect(self):
         print "DISCONNECTED"
@@ -84,8 +104,16 @@ if __name__ == '__main__':
     except:
         pass # eat the exception, reconnection in progress
     runner = ApplicationRunner(
-        environ.get("AUTOBAHN_DEMO_ROUTER", u"ws://127.0.0.1:8080/ws"),
+        environ.get("AUTOBAHN_ROUTER", u"ws://127.0.0.1:8087/ws"),
         u"authsys",
+        extra={
+            'authentication': {
+                'wampcra': {
+                    'authid': 'frontdesk',
+                    'secret': '12345'
+                }
+            }
+        }
     )
     reconnect_to_brain()
     reactor.run()

@@ -24,6 +24,7 @@ subscriptions = Table('subscriptions', meta,
 entries = Table('entries', meta,
     Column('id', Integer, primary_key=True),
     Column('timestamp', Integer),
+    Column('gym_id', Integer),
     Column('token_id', String, ForeignKey("tokens.id")),
 )
 
@@ -42,6 +43,20 @@ members = Table('members', meta,
     Column('extra_notes', String),
     Column('member_type', String), # can be 'ondemand', 'recurring', null or 'perpetual'
     Column('credit_card_id', Integer),
+    Column('address', String),
+    Column('branch_code', String),
+    Column('account_number', String),
+    Column('debit_order_signup_timestamp', Integer),
+)
+
+transactions = Table('transactions', meta,
+    Column('id', Integer, primary_key=True),
+    Column('timestamp', Integer),
+    Column('member_id', Integer),
+    Column('price', Integer),
+    Column('type', String),
+    Column('description', String),
+    Column('outcome', String)
 )
 
 payment_history = Table('payment_history', meta,
@@ -59,6 +74,7 @@ payment_history = Table('payment_history', meta,
 daily_passes = Table('daily_passes', meta,
     Column('id', Integer, primary_key=True),
     Column('member_id', Integer, ForeignKey('members.id')),
+    Column('gym_id', Integer),
     Column('timestamp', Integer))
 
 free_passes = Table('free_passes', meta,
@@ -92,6 +108,7 @@ tables = {
     'tokens': tokens,
     'subscriptions': subscriptions,
     'entries': entries,
+    'transactions': transactions,
     'members': members,
     'daily_passes': daily_passes,
     'payment_history': payment_history,
