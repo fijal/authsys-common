@@ -122,18 +122,17 @@ def list_indemnity_forms(con, query):
         })
     return res
 
-def daypass_change(con, no):
+def daypass_change(con, no, gym_id):
     day_start, day_end = day_start_end()
     lst = list(con.execute(select([daily_passes]).where(and_(and_(daily_passes.c.timestamp > day_start,
         daily_passes.c.timestamp < day_end), daily_passes.c.member_id == no))))
     if len(lst) == 0:
         conf = get_config()
-        con.execute(daily_passes.insert().values(timestamp = int(time.time()), member_id=no,
-                                                 gym_id=conf.get('gym', 'id')))
+        con.execute(daily_passes.insert().values(timestamp = int(time.time()), member_id=no))
     else:
         con.execute(daily_passes.delete().where(daily_passes.c.id == lst[0][0]))
 
-def member_visit_change(con, no):
+def member_visit_change(con, no, gym_id):
     lst1 = list(con.execute(select([tokens.c.id]).where(tokens.c.member_id == no)))
     if not lst1:
         return
@@ -142,7 +141,7 @@ def member_visit_change(con, no):
     if len(lst) == 0:
         conf = get_config()
         con.execute(entries.insert().values(timestamp = int(time.time()), token_id=token_id,
-                                            gym_id = conf.get('gym', 'id')))
+                                            gym_id = gym_id))
     else:
         con.execute(entries.delete().where(entries.c.id == lst[0][0]))
 

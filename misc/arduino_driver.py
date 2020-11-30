@@ -41,7 +41,7 @@ class TokenComponent(ApplicationSession):
         if u'salt' in challenge.extra:
             raise Exception("salt unimplemented")
         return auth.compute_wcs(environ.get("AUTOBAHN_SECRET", None),
-                                challenge.extra['challenge'])
+                                challenge.extra[u'challenge'])
 
 
     def onDisconnect(self):
@@ -51,7 +51,7 @@ class TokenComponent(ApplicationSession):
             reactor.callLater(1.0, reconnect_to_brain)
 
     def auth_token(self, data):
-        return self.call(u'com.members.register_token', data)
+        return self.call(u'com.members.register_token', data, environ.get('AUTOBAHN_GYM_ID', "3"))
 
 class P(LineReceiver):
     delimiter = '\n'
@@ -96,7 +96,8 @@ def reconnect():
     if line_protocol.connected:
         return
     try:
-        SerialPort(line_protocol, '/dev/ttyACM0', reactor, 9600)
+        SerialPort(line_protocol, '/dev/ttyACM0', reactor, 9600) # linux
+        #SerialPort(line_protocol, '/dev/tty.usbmodem14101', reactor, 9600) # OS X
     except:
         reactor.callLater(1.0, reconnect) # in case that one fails
         raise
