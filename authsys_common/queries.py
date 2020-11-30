@@ -223,7 +223,7 @@ def entries_after(con, timestamp, gym_id):
     s = con.execute(select([entries.c.timestamp, entries.c.token_id, tokens.c.member_id,
                             members.c.name, members.c.member_type]).where(
         and_(entries.c.gym_id == gym_id, and_(and_(entries.c.token_id == tokens.c.id, members.c.id == tokens.c.member_id),
-            entries.c.timestamp > timestamp)).order_by(desc(entries.c.timestamp))))
+            entries.c.timestamp > timestamp))).order_by(desc(entries.c.timestamp)))
     ent = [{'timestamp': _timestamp, 'token_id': _tok_id, 'member_id': _memb_id, 'name': _memb_name, 'member_type': _member_type} for
            _timestamp, _tok_id, _memb_id, _memb_name, _member_type in list(s)]
     res = {}
