@@ -350,11 +350,11 @@ def change_subscription_ends(con, no, end_timestamp):
         con.execute(subscriptions.update().where(subscriptions.c.id == subscr_id).values(
             end_timestamp = end_timestamp))
 
-def is_valid_token(con, token_id, t):
+def is_valid_token(con, token_id, t, gym_id):
     r = list(con.execute(select([tokens.c.member_id]).where(and_(tokens.c.id == token_id, tokens.c.valid == True))))
     if len(r) == 0:
         return False
-    entries = entries_after(con, time.time() - 3600 * 24)['entries']
+    entries = entries_after(con, time.time() - 3600 * 24, gym_id)['entries']
     for entry in entries:
         if entry['member_id'] == r[0][0]:
             break
