@@ -166,12 +166,12 @@ def get_form(con, no):
         'extra_notes': l[3],
     }
 
-def unrecognized_entries_after(con, timestamp):
+def unrecognized_entries_after(con, timestamp, gym_id):
     """ List all unrecognized entries after 'timestamp'
     """
     oj = outerjoin(entries, tokens, entries.c.token_id == tokens.c.id)
     s = select([entries.c.token_id]).select_from(oj).where(
-        and_(entries.c.timestamp >= timestamp, tokens.c.id == None)).order_by(
+        and_(entries.c.gym_id == gym_id, and_(entries.c.timestamp >= timestamp, tokens.c.id == None))).order_by(
         desc(entries.c.timestamp))
     return [x[0] for x in con.execute(s)]
 
@@ -216,14 +216,14 @@ def add_till(con, tp, no, year, month, day):
         'end_timestamp': tstamp,
         }))    
 
-def entries_after(con, timestamp):
+def entries_after(con, timestamp, gym_id):
     """ List all the entries after 'timestamp' with extra information
     about the subscription and validity
     """
     s = con.execute(select([entries.c.timestamp, entries.c.token_id, tokens.c.member_id,
                             members.c.name, members.c.member_type]).where(
-        and_(and_(entries.c.token_id == tokens.c.id, members.c.id == tokens.c.member_id),
-            entries.c.timestamp > timestamp)).order_by(desc(entries.c.timestamp)))
+        and_(entries.c.gym_id == gym_id, and_(and_(entries.c.token_id == tokens.c.id, members.c.id == tokens.c.member_id),
+            entries.c.timestamp > timestamp)).order_by(desc(entries.c.timestamp))))
     ent = [{'timestamp': _timestamp, 'token_id': _tok_id, 'member_id': _memb_id, 'name': _memb_name, 'member_type': _member_type} for
            _timestamp, _tok_id, _memb_id, _memb_name, _member_type in list(s)]
     res = {}
