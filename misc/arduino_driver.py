@@ -68,7 +68,7 @@ class P(LineReceiver):
         reactor.callLater(1.0, self.health_check_feedback)
         if not self.feedback:
             return
-        self.feedback.call(u'com.members.reader_visible', 0)
+        self.feedback.call(u'com.members.reader_visible', int(environ.get('AUTOBAHN_GYM_ID', "3")))
 
     def lineReceived(self, data):
         def errb(*args):
