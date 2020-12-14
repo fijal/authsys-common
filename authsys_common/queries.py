@@ -182,6 +182,12 @@ def add_one_month_subscription(con, no, type='regular', t0=None):
             subscriptions.c.member_id == no)))[0][0]
     if t0 is None:
         t0 = time.time()
+    # check if this is any sensible, otherwise silently do nothing
+    lst = list(con.execute(select([subscriptions.c.start_timestamp]).where(and_(
+        subscriptions.c.end_timestamp > t0,
+        subscriptions.c.member_id == no))))
+    if len(lst) > 0:
+        return # double click I would imagine
     end_t = time.mktime(add_months(datetime.datetime.fromtimestamp(t0), 1).timetuple())
     con.execute(subscriptions.insert().values(
         member_id=no, type= type, start_timestamp=t0, end_timestamp= end_t))
