@@ -13,7 +13,7 @@ void setup() {
 	Serial.begin(9600);	// Initialize serial communications with the PC
 	SPI.begin();			// Init SPI bus
 	mfrc522.PCD_Init();	// Init MFRC522 card
-	Serial.print("Scan PICC to see UID and type...\n");
+	//Serial.print("Scan PICC to see UID and type...\n");
 }
 
 void loop()
