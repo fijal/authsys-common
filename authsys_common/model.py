@@ -46,6 +46,7 @@ members = Table('members', meta,
     Column('address', String),
     Column('branch_code', String),
     Column('account_number', String),
+    Column('photo', String), # photo filename
     Column('debit_order_signup_timestamp', Integer),
 )
 
@@ -80,6 +81,7 @@ daily_passes = Table('daily_passes', meta,
 free_passes = Table('free_passes', meta,
     Column('id', Integer, primary_key=True),
     Column('member_id', Integer, ForeignKey('members.id')),
+    Column('gym_id', Integer),
     Column('timestamp', Integer))
 
 league = Table('league', meta,

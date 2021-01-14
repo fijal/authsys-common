@@ -4,6 +4,7 @@
 import time
 import datetime
 import calendar
+from pprint import pprint
 
 from sqlalchemy import select, desc, outerjoin, and_, func, delete, or_
 
@@ -22,11 +23,10 @@ def add_months(sourcedate, months):
 def get_member_list(con, query):
     """ List all the members with whether they paid or not
     """
-    s = select([members.c.id, members.c.name, tokens.c.valid, members.c.phone, members.c.email]).where(
-        and_(members.c.id == tokens.c.member_id, tokens.c.valid)).distinct()
+    s = select([members.c.id, members.c.name, members.c.phone, members.c.email])
     r = []
     query = query.lower()
-    for id, name, _, phone, email in con.execute(s):
+    for id, name, phone, email in con.execute(s):
         if (name and query in name.lower()) or (phone and query in phone.lower()) or (email and query in email.lower()):
             r.append({'id': id,'name': name, 'phone': phone, 'email': email})
     return r
@@ -34,19 +34,49 @@ def get_member_list(con, query):
 def get_member_data(con, no):
     """ Get the subscription data for a single member
     """
+    day_start, day_end = day_start_end()
+    month_start, month_end = month_start_end()
     subs = list(con.execute(select([subscriptions.c.id, subscriptions.c.start_timestamp,
         subscriptions.c.end_timestamp, subscriptions.c.type]).where(
         and_(subscriptions.c.end_timestamp > time.time(), subscriptions.c.member_id == no)).order_by(
         subscriptions.c.end_timestamp)))
-    m_id, name, phone, tstamp, memb_type, notes, sub_type, account_number = list(con.execute(select(
-        [members.c.id, members.c.name, members.c.phone, members.c.timestamp, members.c.member_type,
+    m_id, name, m_id_number, phone, tstamp, memb_type, notes, sub_type, account_number = list(con.execute(select(
+        [members.c.id, members.c.name, members.c.id_number, members.c.phone, members.c.timestamp, members.c.member_type,
         members.c.extra_notes, members.c.subscription_type, members.c.account_number]).where(
         members.c.id == no)))[0]
-    r = {'member_id': m_id, 'name': name, 'phone': phone,
+    tok_list = list(con.execute(select([tokens.c.id]).where(
+        and_(tokens.c.valid, tokens.c.member_id == m_id)
+        )))
+    if len(tok_list):
+        token_id = tok_list[0][0]
+        entry_list = list(con.execute(select([entries.c.timestamp]).where(
+            and_(and_(entries.c.token_id == token_id,
+                      entries.c.timestamp > day_start),
+                 entries.c.timestamp < day_end)).order_by(entries.c.timestamp)))
+        if len(entry_list):
+            entry_timestamp = entry_list[-1][0]
+        else:
+            entry_timestamp = None
+    else:
+        entry_timestamp = None
+    day_pass = list(con.execute(select([daily_passes.c.timestamp]).where(
+        and_(and_(daily_passes.c.timestamp > day_start,
+                  daily_passes.c.timestamp < day_end),
+             daily_passes.c.member_id == m_id)).order_by(daily_passes.c.timestamp)))
+    free_pass = list(con.execute(select([free_passes.c.timestamp]).where(
+        and_(and_(free_passes.c.member_id == no,
+                  free_passes.c.timestamp > month_start),
+             free_passes.c.timestamp < month_end)).order_by(free_passes.c.timestamp)))
+    r = {'member_id': m_id, 'name': name, 'phone': phone, 'entry_timestamp': entry_timestamp,
+         'id_number': m_id_number,
          'start_timestamp': tstamp, 'member_type': memb_type,
          'subscription_starts': None, 'subscription_ends': None, 'extra_notes': notes,
          'subscription_type': sub_type, 'account_number': account_number}
-    r['covid_indemnity_signed'] = len(list(con.execute(select([covid_indemnity.c.member_id]).where(covid_indemnity.c.member_id == no))))
+    #r['covid_indemnity_signed'] = len(list(con.execute(select([covid_indemnity.c.member_id]).where(covid_indemnity.c.member_id == no))))
+    if len(day_pass) > 0:
+        r['daypass_timestamp'] = day_pass[-1][0]
+    if len(free_pass) > 0:
+        r['free_friend_timestamp'] = free_pass[-1][0]
     if len(subs) == 2 and subs[0][3] != 'pause':
         r['subscription_starts'] = subs[1][1]
         r['subscription_ends'] = subs[1][2]
@@ -84,6 +114,12 @@ def day_start_end():
     day_start = time.mktime(now.replace(hour=0, minute=0).timetuple())
     day_end = time.mktime(now.replace(hour=23, minute=0).timetuple())
     return day_start, day_end
+
+def month_start_end():
+    now = datetime.datetime.now()
+    month_start = now.replace(day=1, hour=0, minute=0)
+    month_end = time.mktime(add_months(month_start, 1).timetuple()) - 3600 * 24
+    return time.mktime(month_start.timetuple()), month_end
 
 def list_indemnity_forms(con, query):
     """ List all the indemnity forms that have no assigned tokens
@@ -144,10 +180,19 @@ def daypass_change(con, no, gym_id):
     lst = list(con.execute(select([daily_passes]).where(and_(and_(daily_passes.c.timestamp > day_start,
         daily_passes.c.timestamp < day_end), daily_passes.c.member_id == no))))
     if len(lst) == 0:
-        conf = get_config()
-        con.execute(daily_passes.insert().values(timestamp = int(time.time()), member_id=no))
+        con.execute(daily_passes.insert().values(timestamp = int(time.time()), member_id=no, gym_id=gym_id))
     else:
         con.execute(daily_passes.delete().where(daily_passes.c.id == lst[0][0]))
+
+def freepass_change(con, no, gym_id):
+    month_start, month_end = month_start_end()
+    lst = list(con.execute(select([free_passes]).where(and_(and_(free_passes.c.timestamp > month_start,
+        free_passes.c.timestamp < month_end), free_passes.c.member_id == no))))
+    if len(lst) == 0:
+        con.execute(free_passes.insert().values(timestamp = int(time.time()), member_id=no, gym_id=gym_id))
+    else:
+        con.execute(free_passes.delete().where(free_passes.c.id == lst[0][0]))
+
 
 def member_visit_change(con, no, gym_id):
     lst1 = list(con.execute(select([tokens.c.id]).where(tokens.c.member_id == no)))
