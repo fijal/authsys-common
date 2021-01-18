@@ -443,6 +443,28 @@ def is_valid_token(con, token_id, t, gym_id):
 
 
 def get_stats(con):
+    today = datetime.datetime.now().replace(hour=0, minute=0, second=0)
+    t0 = time.mktime(today.timetuple()) - 3600 * 24 * 7
+    # 7 days back
+    query = select([entries.c.timestamp, entries.c.token_id, entries.c.gym_id]).where(
+        entries.c.timestamp > t0)
+    d = {}
+    for tstamp, token_id, gym_id in con.execute(query):
+        date = datetime.datetime.fromtimestamp(tstamp).date()
+        key = (date.year, date.month, date.day, token_id, gym_id)
+        if key not in d:
+            d[key] = (tstamp, token_id, gym_id)
+    days = [{0: {"dailies": 0, "members": 0}, 1: {"dailies": 0, "members": 0}} for i in range(8)]
+    for key, v in d.iteritems():
+        year, month, day, token_id, gym_id = key
+        day = (today - datetime.datetime(year, month, day)).days
+        days[day][gym_id]['members'] += 1
+    dailies = select([daily_passes.c.timestamp, daily_passes.c.gym_id]).where(
+        daily_passes.c.timestamp > t0)
+    for tstamp, gym_id in con.execute(dailies):
+        if gym_id is None:
+            gym_id = 0
+        days[(today - datetime.datetime.fromtimestamp(tstamp).replace(hour=0, minute=0, second=0)).days][gym_id]['dailies'] += 1
     total_ondemand = list(con.execute(select([func.count()]).select_from(select([members, subscriptions]).where(
         and_(and_(members.c.member_type == 'ondemand', members.c.id == subscriptions.c.member_id),
             subscriptions.c.end_timestamp > time.time())))))[0][0]
@@ -451,11 +473,16 @@ def get_stats(con):
     total_perpetual = list(con.execute(select([func.count()]).select_from(select([members]).where(
         members.c.member_type == 'perpetual'))))[0][0]
     total_visitors = list(con.execute(select([func.count()]).select_from(members)))[0][0]
+    res_days = {}
+    for i, v in enumerate(days):
+        key = time.mktime((today - datetime.timedelta(days=i)).timetuple())
+        res_days[key] = v
     return {
         'total_ondemand': total_ondemand,
         'total_recurring': total_recurring,
         'total_perpetual': total_perpetual,
         'total_visitors': total_visitors,
+        'visits': res_days,
     }
 
 def members_to_update(con):
