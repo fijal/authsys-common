@@ -57,8 +57,10 @@ def get_member_data(con, no):
             entry_timestamp = entry_list[-1][0]
         else:
             entry_timestamp = None
+        valid_token = True
     else:
         entry_timestamp = None
+        valid_token = False
     day_pass = list(con.execute(select([daily_passes.c.timestamp]).where(
         and_(and_(daily_passes.c.timestamp > day_start,
                   daily_passes.c.timestamp < day_end),
@@ -68,7 +70,7 @@ def get_member_data(con, no):
                   free_passes.c.timestamp > month_start),
              free_passes.c.timestamp < month_end)).order_by(free_passes.c.timestamp)))
     r = {'member_id': m_id, 'name': name, 'phone': phone, 'entry_timestamp': entry_timestamp,
-         'id_number': m_id_number,
+         'id_number': m_id_number, 'valid_token': valid_token,
          'start_timestamp': tstamp, 'member_type': memb_type,
          'subscription_starts': None, 'subscription_ends': None, 'extra_notes': notes,
          'subscription_type': sub_type, 'account_number': account_number}
