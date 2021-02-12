@@ -47,7 +47,16 @@ members = Table('members', meta,
     Column('branch_code', String),
     Column('account_number', String),
     Column('photo', String), # photo filename
+    Column('id_photo', String),
+    Column('last_id_update', Integer),
+    Column('last_id_checked', Integer),
     Column('debit_order_signup_timestamp', Integer),
+)
+
+failed_checks = Table('failed_checks', meta,
+    Column('id', Integer, primary_key=True),
+    Column('member_id', Integer, ForeignKey('members.id')),
+    Column('timestamp', Integer),
 )
 
 transactions = Table('transactions', meta,
@@ -108,6 +117,7 @@ covid_indemnity = Table('covid_indemnity', meta,
 
 tables = {
     'tokens': tokens,
+    'failed_checks': failed_checks,
     'subscriptions': subscriptions,
     'entries': entries,
     'transactions': transactions,

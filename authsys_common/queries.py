@@ -9,7 +9,7 @@ from pprint import pprint
 from sqlalchemy import select, desc, outerjoin, and_, func, delete, or_
 
 from .model import members, entries, tokens, subscriptions, daily_passes, payment_history,\
-    free_passes, league, covid_indemnity, transactions
+    free_passes, league, covid_indemnity, transactions, failed_checks
 from .scripts import get_config
 
 
@@ -31,6 +31,12 @@ def get_member_list(con, query):
             r.append({'id': id,'name': name, 'phone': phone, 'email': email})
     return r
 
+def get_next_monday():
+    today = datetime.datetime.now().replace(hour=0, minute=0, second=0)
+    while today.weekday() != 0:
+        today += datetime.timedelta(days=1)
+    return time.mktime(today.timetuple())
+
 def get_member_data(con, no):
     """ Get the subscription data for a single member
     """
@@ -40,10 +46,21 @@ def get_member_data(con, no):
         subscriptions.c.end_timestamp, subscriptions.c.type]).where(
         and_(subscriptions.c.end_timestamp > time.time(), subscriptions.c.member_id == no)).order_by(
         subscriptions.c.end_timestamp)))
-    m_id, name, m_id_number, phone, tstamp, memb_type, notes, sub_type, account_number = list(con.execute(select(
+    m_id, name, m_id_number, phone, tstamp, memb_type, notes, sub_type, account_number, \
+        debit_order_signup_timestamp, last_id_checked, last_id_update, photo, id_photo = list(con.execute(select(
         [members.c.id, members.c.name, members.c.id_number, members.c.phone, members.c.timestamp, members.c.member_type,
-        members.c.extra_notes, members.c.subscription_type, members.c.account_number]).where(
+        members.c.extra_notes, members.c.subscription_type, members.c.account_number, members.c.debit_order_signup_timestamp,
+        members.c.last_id_checked, members.c.last_id_update,
+        members.c.photo, members.c.id_photo]).where(
         members.c.id == no)))[0]
+    if last_id_checked is None:
+        f_checks = [x[0] for x in con.execute(select([failed_checks.c.timestamp]).where(
+            failed_checks.c.member_id == no))]
+    else:
+        f_checks = [x[0] for x in con.execute(select([failed_checks.c.timestamp]).where(
+            and_(failed_checks.c.member_id == no,
+                 failed_checks.c.timestamp > last_id_checked
+            )))]
     tok_list = list(con.execute(select([tokens.c.id]).where(
         and_(tokens.c.valid, tokens.c.member_id == m_id)
         )))
@@ -73,7 +90,11 @@ def get_member_data(con, no):
          'id_number': m_id_number, 'valid_token': valid_token,
          'start_timestamp': tstamp, 'member_type': memb_type,
          'subscription_starts': None, 'subscription_ends': None, 'extra_notes': notes,
-         'subscription_type': sub_type, 'account_number': account_number}
+         'subscription_type': sub_type, 'account_number': account_number,
+         'last_id_update': last_id_update, 'last_id_checked': last_id_checked,
+         'failed_checks': f_checks,
+         'photo_present': photo is not None,
+         'next_monday': int(get_next_monday()), 'debit_order_signup_timestamp': debit_order_signup_timestamp}
     #r['covid_indemnity_signed'] = len(list(con.execute(select([covid_indemnity.c.member_id]).where(covid_indemnity.c.member_id == no))))
     if len(day_pass) > 0:
         r['daypass_timestamp'] = day_pass[-1][0]
@@ -107,8 +128,13 @@ def get_member_data(con, no):
             r['price'] = conf.get('price', r['subscription_type'])
         except KeyError:
             r['price'] = "?"
-    # calculate next monday
-    r['next_monday'] = 0;
+
+    # this really does not belong here, but it's just so much easier to do in Python...
+    now = datetime.datetime.now().date()
+    d = add_months(now.replace(day=1), 1).date()
+    r['days_till_month_end'] = (d - now).days
+    r['days_in_current_month'] = calendar.monthrange(now.year, now.month)[1]
+
     return r
 
 def day_start_end():
@@ -639,7 +665,7 @@ def check_one_month(con, member_id):
 
 def update_account_number(con, member_id, name, price, contact_number, address, branch_code, account_number):
     con.execute(members.update().where(members.c.id==member_id).values(name=name, phone=contact_number,
-        address=address, branch_code=branch_code, account_number=account_number, debit_order_signup_timestamp=int(time.time())))
+        address=address, branch_code=branch_code, account_number=account_number))
     # record that the transaction initation took place
     con.execute(transactions.insert().values({
         'member_id': member_id,
