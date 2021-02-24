@@ -15,7 +15,7 @@ tokens = Table('tokens', meta,
 subscriptions = Table('subscriptions', meta,
     Column('id', Integer, primary_key=True),
     Column('member_id', Integer, ForeignKey('members.id')),
-    Column('type', String), # either 'before4' or 'regular'
+    Column('type', String), # either 'before4' or 'regular' or 'pause'
     Column('start_timestamp', Integer),
     Column('end_timestamp', Integer),
     Column('renewal_id', Integer),
@@ -51,6 +51,7 @@ members = Table('members', meta,
     Column('last_id_update', Integer),
     Column('last_id_checked', Integer),
     Column('debit_order_signup_timestamp', Integer),
+    Column('debit_order_charge_day', Integer),
 )
 
 failed_checks = Table('failed_checks', meta,
@@ -67,6 +68,16 @@ transactions = Table('transactions', meta,
     Column('type', String),
     Column('description', String),
     Column('outcome', String)
+)
+
+pending_transactions = Table('pending_transactions', meta,
+    Column('id', Integer, primary_key=True),
+    Column('member_id', Integer, ForeignKey('members.id')),
+    Column('timestamp', Integer),
+    Column('creation_timestamp', Integer),
+    Column('price', Integer),
+    Column('type', String),
+    Column('description', String)
 )
 
 payment_history = Table('payment_history', meta,
@@ -121,13 +132,14 @@ tables = {
     'subscriptions': subscriptions,
     'entries': entries,
     'transactions': transactions,
+    'pending_transactions': pending_transactions,
     'members': members,
     'daily_passes': daily_passes,
     'payment_history': payment_history,
     'free_passes': free_passes,
     'league': league,
     'vouchers': vouchers,
-    'covid_indemnity': covid_indemnity
+    'covid_indemnity': covid_indemnity,
     }
 
 if __name__ == '__main__':

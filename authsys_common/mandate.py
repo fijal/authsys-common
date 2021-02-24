@@ -2,6 +2,7 @@
 import os
 from fpdf import FPDF
 from datetime import datetime, timedelta
+from authsys_common.dates import add_month
 import calendar
 
 MAX_X = 210
@@ -50,23 +51,22 @@ def create_mandate(member_id, name, address, bank, branch_code, account_number, 
     days_in_month = calendar.monthrange(now.year, now.month)[1]
     price_per_day = price / days_in_month
     first_charge = price_per_day * (days_in_month - now.day)
+    first_charge_day = datetime.now().replace(minute=0, hour=0, second=0, day=charge_day)
     if charge_day < datetime.now().day:
         first_charge += price
+        first_charge_day = add_month(first_charge_day)
 
-    f.text(74, 150, "%.2f" % first_charge)
-    #f.text(95, 140, first_charge_date)
+    f.text(74, 146, "R%.2f" % first_charge)
+    f.text(123, 146, first_charge_day.strftime("%d/%b/%Y"))
 
-    #f.text(add_ending(charge_day))
+    f.text(84, 151, "R%.2f" % price)
+    f.text(122, 151, add_ending(charge_day))
+    f.text(30, 160.5, add_ending(charge_day))
 
-#    f.set_font('Arial', '', 8)
-#    f.text(140, 143, next_monday.strftime("%d %b %y"))
-#    f.set_font('Arial', '', 10)
-#    day = add_ending(next_monday.day)
-#    f.text(111, 173, day)
-#    f.text(26, 239, "Cape Town")
-#    f.text(75, 239, add_ending(now.day))
-#    f.text(100, 239, now.strftime("%B"))
-#    f.text(120, 260, "BLOC11-" + str(member_id))
+    f.text(30, 257, "Cape Town")
+    f.text(75, 257, add_ending(now.day))
+    f.text(100, 257, now.strftime("%B"))
+    f.text(60, 278.6, "B11-" + str(member_id))
 #    f.set_font('Arial', '', 6)
 #    f.text()
     

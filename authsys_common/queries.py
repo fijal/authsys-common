@@ -9,16 +9,10 @@ from pprint import pprint
 from sqlalchemy import select, desc, outerjoin, and_, func, delete, or_
 
 from .model import members, entries, tokens, subscriptions, daily_passes, payment_history,\
-    free_passes, league, covid_indemnity, transactions, failed_checks
+    free_passes, league, covid_indemnity, transactions, failed_checks, pending_transactions
+from .dates import add_months, add_month
 from .scripts import get_config
 
-
-def add_months(sourcedate, months):
-    month = sourcedate.month - 1 + months
-    year = int(sourcedate.year + month / 12 )
-    month = month % 12 + 1
-    day = min(sourcedate.day, calendar.monthrange(year,month)[1])
-    return datetime.datetime(year,month,day,23,00)
 
 def get_member_list(con, query):
     """ List all the members with whether they paid or not
@@ -148,6 +142,59 @@ def month_start_end():
     month_start = now.replace(day=1, hour=0, minute=0)
     month_end = time.mktime(add_months(month_start, 1).timetuple()) - 3600 * 24
     return time.mktime(month_start.timetuple()), month_end
+
+def add_subscription_and_future_charges(con, member_id, charge_day, price, sub_type):
+    now = datetime.datetime.now()
+    # calculate detailed charges
+    days_in_month = calendar.monthrange(now.year, now.month)[1]
+    price_per_day = price / days_in_month
+    first_charge = price_per_day * (days_in_month - now.day)
+    first_charge_day = now.replace(minute=0, hour=0, second=0, day=charge_day)
+    if charge_day < now.day:
+        first_charge += price
+        first_charge_day = add_month(first_charge_day)
+    l = [x for x, in con.execute(select([subscriptions.c.end_timestamp]).where(and_(
+        subscriptions.c.member_id == member_id,
+        subscriptions.c.end_timestamp > time.mktime(now.timetuple()))))]
+    if len(l) > 1:
+        return {'error': 'mangled subscriptions'}
+    if len(l) == 0:
+        start = time.mktime(now.timetuple())
+    else:
+        start = l[0]
+    end_of_the_month = add_month(now).replace(day=1, hour=1, second=0, minute=0)
+    con.execute(subscriptions.insert().values(
+        member_id=member_id,
+        type=sub_type,
+        start_timestamp=start,
+        end_timestamp=time.mktime(end_of_the_month.timetuple()),
+        renewal_id=0
+        ))
+    con.execute(pending_transactions.insert().values(
+        member_id=member_id,
+        type=sub_type,
+        creation_timestamp=time.time(),
+        timestamp=time.mktime(first_charge_day.timetuple()),
+        price=first_charge,
+        description='pending first charge'
+        ))
+    if charge_day < now.day:
+        con.execute(subscriptions.insert().values(
+            member_id=member_id,
+            type=sub_type,
+            start_timestamp=time.mktime(end_of_the_month.timetuple()),
+            end_timestamp=time.mktime(add_month(end_of_the_month).timetuple()),
+            renewal_id=0
+            ))
+        con.execute(pending_transactions.insert().values(
+            member_id=member_id,
+            type=sub_type,
+            creation_timestamp=time.time(),
+            timestamp=time.mktime(add_month(first_charge_day).timetuple()),
+            price=price,
+            description='pending charge'
+            ))
+    return {'success': True}
 
 def list_indemnity_forms(con, query):
     """ List all the indemnity forms that have no assigned tokens
@@ -480,17 +527,30 @@ def get_stats(con):
         key = (date.year, date.month, date.day, token_id, gym_id)
         if key not in d:
             d[key] = (tstamp, token_id, gym_id)
-    days = [{0: {"dailies": 0, "members": 0}, 1: {"dailies": 0, "members": 0}} for i in range(8)]
+    days = [{0: {"dailies": 0, "members": 0, "free": 0}, 1: {"dailies": 0, "members": 0, "free": 0}} for i in range(8)]
     for key, v in d.iteritems():
         year, month, day, token_id, gym_id = key
         day = (today - datetime.datetime(year, month, day)).days
         days[day][gym_id]['members'] += 1
-    dailies = select([daily_passes.c.timestamp, daily_passes.c.gym_id]).where(
+    dailies = select([daily_passes.c.timestamp, daily_passes.c.gym_id, daily_passes.c.member_id]).where(
         daily_passes.c.timestamp > t0)
-    for tstamp, gym_id in con.execute(dailies):
+    daily_dict = {}
+    for tstamp, gym_id, member_id in con.execute(dailies):
         if gym_id is None:
             gym_id = 0
         days[(today - datetime.datetime.fromtimestamp(tstamp).replace(hour=0, minute=0, second=0)).days][gym_id]['dailies'] += 1
+        day = (datetime.datetime.fromtimestamp(tstamp).date() - datetime.date(2016, 1, 1)).days
+        daily_dict[(member_id, day)] = True
+
+    free_p = select([free_passes.c.timestamp, free_passes.c.gym_id, free_passes.c.member_id]).where(
+        free_passes.c.timestamp > t0)
+    for tstamp, gym_id, member_id in con.execute(free_p):
+        if gym_id is None:
+            gym_id = 0
+        if (member_id, day) in daily_dict:
+            continue
+        days[(today - datetime.datetime.fromtimestamp(tstamp).replace(hour=0, minute=0, second=0)).days][gym_id]['free'] += 1
+
     total_ondemand = list(con.execute(select([func.count()]).select_from(select([members, subscriptions]).where(
         and_(and_(members.c.member_type == 'ondemand', members.c.id == subscriptions.c.member_id),
             subscriptions.c.end_timestamp > time.time())))))[0][0]
