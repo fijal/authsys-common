@@ -178,22 +178,6 @@ def add_subscription_and_future_charges(con, member_id, charge_day, price, sub_t
         price=first_charge,
         description='pending first charge'
         ))
-    if charge_day < now.day:
-        con.execute(subscriptions.insert().values(
-            member_id=member_id,
-            type=sub_type,
-            start_timestamp=time.mktime(end_of_the_month.timetuple()),
-            end_timestamp=time.mktime(add_month(end_of_the_month).timetuple()),
-            renewal_id=0
-            ))
-        con.execute(pending_transactions.insert().values(
-            member_id=member_id,
-            type=sub_type,
-            creation_timestamp=time.time(),
-            timestamp=time.mktime(add_month(first_charge_day).timetuple()),
-            price=price,
-            description='pending charge'
-            ))
     return {'success': True}
 
 def list_indemnity_forms(con, query):
