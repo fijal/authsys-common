@@ -708,7 +708,7 @@ def check_one_month(con, member_id):
     return time.time() - l[-1][0] < 3600 * 24 * 28
 
 def update_account_number(con, member_id, name, price, contact_number, address, branch_code, account_number):
-    con.execute(members.update().where(members.c.id==member_id).values(name=name, phone=contact_number,
+    con.execute(members.update().where(members.c.id==member_id).values(account_holder_name=name, phone=contact_number,
         address=address, branch_code=branch_code, account_number=account_number))
     # record that the transaction initation took place
     con.execute(transactions.insert().values({

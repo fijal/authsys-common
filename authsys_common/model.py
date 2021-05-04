@@ -39,11 +39,12 @@ members = Table('members', meta,
     Column('show_up_reason', String),
     Column('signature_filename', String),
     Column('timestamp', Integer),
-    Column('subscription_type', String), # yoga, regular, before4, youth, yogaclimbing
+    Column('subscription_type', String), # regular, before4, youth
     Column('extra_notes', String),
     Column('member_type', String), # can be 'ondemand', 'recurring', null or 'perpetual'
     Column('credit_card_id', Integer),
     Column('address', String),
+    Column('account_holder_name', String),
     Column('branch_code', String),
     Column('account_number', String),
     Column('photo', String), # photo filename
