@@ -52,7 +52,7 @@ def create_mandate(member_id, name, address, bank, branch_code, account_number, 
     price_per_day = price / days_in_month
     first_charge = price_per_day * (days_in_month - now.day)
     first_charge_day = datetime.now().replace(minute=0, hour=0, second=0, day=charge_day)
-    if charge_day < datetime.now().day:
+    if charge_day < datetime.now().day + 5:
         first_charge += price
         first_charge_day = add_month(first_charge_day)
 

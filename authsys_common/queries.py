@@ -41,11 +41,11 @@ def get_member_data(con, no):
         and_(subscriptions.c.end_timestamp > time.time(), subscriptions.c.member_id == no)).order_by(
         subscriptions.c.end_timestamp)))
     m_id, name, m_id_number, phone, tstamp, memb_type, notes, sub_type, account_number, \
-        debit_order_signup_timestamp, last_id_checked, last_id_update, photo, id_photo = list(con.execute(select(
+        debit_order_signup_timestamp, last_id_checked, last_id_update, photo, id_photo, charge_day = list(con.execute(select(
         [members.c.id, members.c.name, members.c.id_number, members.c.phone, members.c.timestamp, members.c.member_type,
         members.c.extra_notes, members.c.subscription_type, members.c.account_number, members.c.debit_order_signup_timestamp,
         members.c.last_id_checked, members.c.last_id_update,
-        members.c.photo, members.c.id_photo]).where(
+        members.c.photo, members.c.id_photo, members.c.debit_order_charge_day]).where(
         members.c.id == no)))[0]
     if last_id_checked is None:
         f_checks = [x[0] for x in con.execute(select([failed_checks.c.timestamp]).where(
@@ -87,6 +87,7 @@ def get_member_data(con, no):
          'subscription_type': sub_type, 'account_number': account_number,
          'last_id_update': last_id_update, 'last_id_checked': last_id_checked,
          'failed_checks': f_checks,
+         'charge_day': charge_day,
          'photo_present': photo is not None,
          'next_monday': int(get_next_monday()), 'debit_order_signup_timestamp': debit_order_signup_timestamp}
     #r['covid_indemnity_signed'] = len(list(con.execute(select([covid_indemnity.c.member_id]).where(covid_indemnity.c.member_id == no))))
