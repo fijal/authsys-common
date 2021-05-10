@@ -1,0 +1,37 @@
+<html>
+<head>
+</head>
+<body>
+    {% if upload %}
+    <div>
+        <h1>Hours worked:</h1>
+    </div>
+    <div>
+        {% for key, v in hours %}
+            {{ key }} {{ v }}h {% if key in weekends %} - {{ weekends[key] }} weekend day shifts {% endif %}
+            {% if key in setting %}- {{ setting[key] }} sets {% endif %}
+            {% if key in beginner %}- {{ beginner[key] }} beginner classes {% endif %}
+            {% if key in morning %}- {{ morning[key] }} morning shifts {% endif %}
+            {% if key in evening %}- {{ evening[key] }} evening shifts {% endif %}
+
+            <br/>
+        {% endfor %}
+    </div>
+    {% if problems %}
+    <div>
+        <h1>Problems:</h1>
+    </div>
+    <div>
+        {% for problem in problems %}
+           {{ problem }}<br/>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endif %}
+    Upload csv file:<br/>
+    <form action="http://localhost:5000/upload" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file"/>
+        <input type="submit" value="Upload" name="submit"/>
+    </form>
+</body>
+</html>
