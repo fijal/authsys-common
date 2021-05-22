@@ -150,4 +150,4 @@ def upload():
         res = process_rows(list(csv.reader(StringIO(cont))))
     return render_template('index.html', **res)
 
-app.run()
+app.run(port=5007)
