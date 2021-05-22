@@ -47,9 +47,9 @@ def timediff(start, stop):
     return ((h_t * 60 + m_t) - h_s * 60 + m_s) / 60.
 
 def process_rows(rows):
-    assert rows[0][:16] == ['', '', 'morning shift', 'evening shift', 'cafe shift am', 'cafe shift pm', 'Beginners class', '',
+    assert rows[0][:17] == ['', '', 'morning shift', 'evening shift', 'cafe shift am', 'cafe shift pm', 'Beginners class', '',
                         'south shift am', 'south shift pm', 'Beginners class South', 'setting south', 'setting north',
-                        'Admin', 'Cleaning PE', 'Cleaning South'], rows[0][:16]
+                        'South cafe pm', 'Admin', 'Cleaning PE', 'Cleaning South'], rows[0][:17]
 
     rows = rows[1:]
     problems = []
@@ -83,8 +83,8 @@ def process_rows(rows):
         hours[who] = timediff(start, stop) + hours[who]
 
     for i in range(len(rows)):
-        row = rows[i][:14]
-        day, day_of_the_week, front_am, front_pm, cafe_am, cafe_pm, beg_north, _, south_am, south_pm, beg_south, set_south, set_north, admin = row
+        row = rows[i][:15]
+        day, day_of_the_week, front_am, front_pm, cafe_am, cafe_pm, beg_north, _, south_am, south_pm, south_cafe_pm, beg_south, set_south, set_north, admin = row
 
         l1 = [x for x in row[2:] if x != '']
 
@@ -105,6 +105,7 @@ def process_rows(rows):
         add_hours(south_pm, day_of_the_week, "South pm")
         add_hours(beg_south, day_of_the_week, "Beginner south")
         add_hours(beg_north, day_of_the_week, "Beginner north")
+        add_hours(south_cafe_pm, day_of_the_week, "Cafe pm")
         if '(' in admin:
             admin_person = admin[:admin.find('(')].strip(" ")
         else:
