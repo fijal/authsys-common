@@ -49,7 +49,7 @@ def timediff(start, stop):
 def process_rows(rows):
     assert rows[0][:17] == ['', '', 'morning shift', 'evening shift', 'cafe shift am', 'cafe shift pm', 'Beginners class', '',
                         'south shift am', 'south shift pm', 'Beginners class South', 'setting south', 'setting north',
-                        'South cafe pm', 'Admin', 'Cleaning PE', 'Cleaning South'], rows[0][:17]
+                        'South Cafe pm', 'Admin', 'Cleaning PE', 'Cleaning South'], rows[0][:17]
 
     rows = rows[1:]
     problems = []
