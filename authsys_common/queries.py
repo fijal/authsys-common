@@ -21,8 +21,20 @@ def get_member_list(con, query):
     r = []
     query = query.lower()
     for id, name, phone, email in con.execute(s):
+        day_start, day_end = day_start_end()
         if (name and query in name.lower()) or (phone and query in phone.lower()) or (email and query in email.lower()):
             r.append({'id': id,'name': name, 'phone': phone, 'email': email})
+
+            lst = list(con.execute(select([daily_passes.c.timestamp]).where(and_(and_(
+                    daily_passes.c.member_id == id,
+                    daily_passes.c.timestamp < day_end),
+                    daily_passes.c.timestamp > day_start))))
+            if len(lst) > 0:
+                last_daypass_timestamp = lst[0][0]
+            else:
+                last_daypass_timestamp = None
+            r[-1]['last_daypass_timestamp'] = last_daypass_timestamp
+
     return r
 
 def get_next_monday():
