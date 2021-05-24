@@ -44,7 +44,7 @@ def get_hours(day, what):
 def timediff(start, stop):
     h_s, m_s = start
     h_t, m_t = stop
-    return ((h_t * 60 + m_t) - h_s * 60 + m_s) / 60.
+    return ((h_t * 60 + m_t) - (h_s * 60 + m_s)) / 60.
 
 def process_rows(rows):
     assert rows[0][:17] == ['', '', 'morning shift', 'evening shift', 'cafe shift am', 'cafe shift pm', 'Beginners class', '',
