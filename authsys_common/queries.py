@@ -562,7 +562,7 @@ def get_stats(con):
         and_(and_(members.c.member_type == 'ondemand', members.c.id == subscriptions.c.member_id),
             subscriptions.c.end_timestamp > time.time())))))[0][0]
     total_recurring = list(con.execute(select([func.count()]).select_from(select([members]).where(
-        and_(members.c.member_type == 'recurring', members.c.credit_card_id != None)))))[0][0]
+        members.c.member_type == 'recurring'))))[0][0]
     total_perpetual = list(con.execute(select([func.count()]).select_from(select([members]).where(
         members.c.member_type == 'perpetual'))))[0][0]
     total_visitors = list(con.execute(select([func.count()]).select_from(members)))[0][0]
