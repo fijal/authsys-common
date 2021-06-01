@@ -146,8 +146,8 @@ def get_member_data(con, no):
 
 def day_start_end():
     now = datetime.datetime.now()
-    day_start = time.mktime(now.replace(hour=0, minute=0).timetuple())
-    day_end = time.mktime(now.replace(hour=23, minute=0).timetuple())
+    day_start = time.mktime(now.replace(hour=0, minute=0, second=0).timetuple())
+    day_end = time.mktime(now.replace(hour=23, minute=0, second=0).timetuple())
     return day_start, day_end
 
 def month_start_end():
@@ -163,7 +163,7 @@ def add_subscription_and_future_charges(con, member_id, charge_day, price, sub_t
     price_per_day = price / days_in_month
     first_charge = price_per_day * (days_in_month - now.day)
     first_charge_day = now.replace(minute=0, hour=0, second=0, day=charge_day)
-    if charge_day < now.day:
+    if charge_day < now.day + 5:
         first_charge += price
         first_charge_day = add_month(first_charge_day)
     l = [x for x, in con.execute(select([subscriptions.c.end_timestamp]).where(and_(
@@ -175,7 +175,7 @@ def add_subscription_and_future_charges(con, member_id, charge_day, price, sub_t
         start = time.mktime(now.timetuple())
     else:
         start = l[0]
-    end_of_the_month = add_month(now).replace(day=1, hour=1, second=0, minute=0)
+    end_of_the_month = add_month(now).replace(day=1, hour=23, second=0, minute=0)
     con.execute(subscriptions.insert().values(
         member_id=member_id,
         type=sub_type,
@@ -183,6 +183,16 @@ def add_subscription_and_future_charges(con, member_id, charge_day, price, sub_t
         end_timestamp=time.mktime(end_of_the_month.timetuple()),
         renewal_id=0
         ))
+    if charge_day < now.day + 5:
+        next_month_end = add_month(end_of_the_month)
+        con.execute(subscriptions.insert().values(
+            member_id=member_id,
+            type=sub_type,
+            start_timestamp=time.mktime(end_of_the_month.timetuple()),
+            end_timestamp=time.mktime(next_month_end.timetuple()),
+            renewal_id=0
+            ))
+
     con.execute(pending_transactions.insert().values(
         member_id=member_id,
         type=sub_type,

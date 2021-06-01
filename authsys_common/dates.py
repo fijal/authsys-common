@@ -16,7 +16,8 @@ def add_month(d):
     if month == 13:
         month = 1
         year += 1
-    return datetime(year, month, d.day)
+    day = min(d.day, calendar.monthrange(year,month)[1])
+    return datetime(year, month, day)
 
 def calculate_future_charges(now, charge_day, price):
     XXXX
