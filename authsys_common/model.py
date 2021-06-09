@@ -52,6 +52,7 @@ members = Table('members', meta,
     Column('last_id_update', Integer),
     Column('last_id_checked', Integer),
     Column('debit_order_signup_timestamp', Integer),
+    Column('debit_order_gym_id', Integer), # where did the debit order got signed
     Column('debit_order_charge_day', Integer),
 )
 
