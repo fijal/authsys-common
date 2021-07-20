@@ -69,7 +69,7 @@ def process_rows(rows):
             return
         if who not in hours:
             hours[who] = 0
-        if day.lower() in ['saturday', 'sunday', 'public holiday']:
+        if day.lower() in ['saturday', 'sunday', 'public holiday'] and 'beginner' not in what.lower():
             weekends[who] = weekends.get(who, 0) + 1
         if what == 'setting':
             setting[who] = setting.get(who, 0) + 1
