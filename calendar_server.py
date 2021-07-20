@@ -106,11 +106,8 @@ def process_rows(rows):
         add_hours(beg_south, day_of_the_week, "Beginner south")
         add_hours(beg_north, day_of_the_week, "Beginner north")
         add_hours(south_cafe_pm, day_of_the_week, "Cafe pm")
-        if '(' in admin:
-            admin_person = admin[:admin.find('(')].strip(" ")
-        else:
-            admin_person = admin
-        add_hours(admin_person, day_of_the_week, "Admin")
+        for item in expand(admin):
+            add_hours(item, day_of_the_week, "Admin")
 
         for item in expand(set_south):
             add_hours(item, day_of_the_week, "setting")
