@@ -15,15 +15,21 @@ def get_hours(day, what):
     day = day.lower()
     if what == 'Beginner south' or what == 'Beginner north':
         return (9, 0), (13, 0)
-    if what == 'Front am' or what == 'Cafe am':
+    if what == 'Front am':
         if day in ['public holiday', 'sunday', 'saturday']:
-            return (8, 0), (19, 0)
+            return (10, 0), (19, 0)
         elif day in ['tuesday', 'thursday']:
             return (7, 0), (15, 0)
         else:
             return (8, 0), (15, 0)
-    if what == 'Front pm' or what == 'Cafe pm':
+    if what == 'Front pm':
         return (14, 30), (22, 0)
+    if what == 'Cafe am':
+        if day in ['public holiday', 'sunday', 'saturday']:
+            return (10, 00), (19, 00)
+        return (10, 00), (16, 00)
+    if what == 'Cafe pm':
+        return (16, 00), (22, 00)
     if what == 'South am':
         if day in ['public holiday', 'sunday', 'saturday']:
             return (8, 0), (19, 0)
