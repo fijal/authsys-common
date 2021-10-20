@@ -53,11 +53,11 @@ def get_member_data(con, no):
         and_(subscriptions.c.end_timestamp > time.time(), subscriptions.c.member_id == no)).order_by(
         subscriptions.c.end_timestamp)))
     m_id, name, m_id_number, phone, tstamp, memb_type, notes, sub_type, account_number, \
-        debit_order_signup_timestamp, last_id_checked, last_id_update, photo, id_photo, charge_day = list(con.execute(select(
+        debit_order_signup_timestamp, last_id_checked, last_id_update, photo, id_photo, charge_day, first_charge = list(con.execute(select(
         [members.c.id, members.c.name, members.c.id_number, members.c.phone, members.c.timestamp, members.c.member_type,
         members.c.extra_notes, members.c.subscription_type, members.c.account_number, members.c.debit_order_signup_timestamp,
         members.c.last_id_checked, members.c.last_id_update,
-        members.c.photo, members.c.id_photo, members.c.debit_order_charge_day]).where(
+        members.c.photo, members.c.id_photo, members.c.debit_order_charge_day, members.c.debit_order_first_charge]).where(
         members.c.id == no)))[0]
     if last_id_checked is None:
         f_checks = [x[0] for x in con.execute(select([failed_checks.c.timestamp]).where(
@@ -101,6 +101,7 @@ def get_member_data(con, no):
          'failed_checks': f_checks,
          'charge_day': charge_day,
          'photo_present': photo is not None,
+         'first_charge': first_charge,
          'next_monday': int(get_next_monday()), 'debit_order_signup_timestamp': debit_order_signup_timestamp}
     #r['covid_indemnity_signed'] = len(list(con.execute(select([covid_indemnity.c.member_id]).where(covid_indemnity.c.member_id == no))))
     if len(day_pass) > 0:
@@ -159,13 +160,9 @@ def month_start_end():
 def add_subscription_and_future_charges(con, member_id, charge_day, price, sub_type):
     now = datetime.datetime.now()
     # calculate detailed charges
-    days_in_month = calendar.monthrange(now.year, now.month)[1]
-    price_per_day = price / days_in_month
-    first_charge = price_per_day * (days_in_month - now.day)
+    first_charge = price
     first_charge_day = now.replace(minute=0, hour=0, second=0, day=charge_day)
-    if charge_day < now.day + 5:
-        first_charge += price
-        first_charge_day = add_month(first_charge_day)
+    first_charge_day = add_month(first_charge_day)
     l = [x for x, in con.execute(select([subscriptions.c.end_timestamp]).where(and_(
         subscriptions.c.member_id == member_id,
         subscriptions.c.end_timestamp > time.mktime(now.timetuple()))))]

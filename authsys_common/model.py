@@ -54,6 +54,7 @@ members = Table('members', meta,
     Column('debit_order_signup_timestamp', Integer),
     Column('debit_order_gym_id', Integer), # where did the debit order got signed
     Column('debit_order_charge_day', Integer),
+    Column('debit_order_first_charge', Integer)
 )
 
 failed_checks = Table('failed_checks', meta,
