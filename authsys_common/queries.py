@@ -139,9 +139,9 @@ def get_member_data(con, no):
 
     # this really does not belong here, but it's just so much easier to do in Python...
     now = datetime.datetime.now().date()
-    d = add_months(now.replace(day=1), 1).date()
-    r['days_till_month_end'] = (d - now).days
-    r['days_in_current_month'] = calendar.monthrange(now.year, now.month)[1]
+    days_in_month = calendar.monthrange(now.year, now.month)[1]
+    r['days_till_month_end'] = days_in_month - now.day
+    r['days_in_current_month'] = days_in_month
 
     return r
 
