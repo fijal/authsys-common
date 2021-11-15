@@ -27,7 +27,7 @@ def create_mandate(member_id, name, address, bank, branch_code, account_number, 
                    price, phone, charge_day):
     f = FPDF('P', 'mm', 'A4')
     f.add_page()
-    pth = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'mandate.png')
+    pth = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'mandate3.png')
     f.image(pth, 0, 0, MAX_X, MAX_Y)
     f.set_font('Courier', '', 12)
     f.text(85, 68, name)
